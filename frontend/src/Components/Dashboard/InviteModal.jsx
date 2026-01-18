@@ -21,8 +21,11 @@ import MailOutlineIcon from "@mui/icons-material/MailOutline";
 import MarkEmailReadIcon from "@mui/icons-material/MarkEmailRead";
 import { alpha } from "@mui/material/styles";
 import { toast } from "react-toastify";
+import { motion } from "framer-motion";
 
 import { sendInviteAPI } from "../../services/groupApi";
+
+const MotionBox = motion(Box);
 
 const isValidEmail = (email) => {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(email || "").trim());
@@ -105,6 +108,19 @@ const InviteModal = ({ open, onClose, groups = [] }) => {
           boxShadow: "0 26px 80px rgba(2,6,23,0.20)",
           position: "relative",
         },
+        // ✅ motion animation on Paper
+        component: motion.div,
+        initial: { opacity: 0, y: 16, scale: 0.98 },
+        animate: open ? { opacity: 1, y: 0, scale: 1 } : {},
+        transition: { duration: 0.22, ease: "easeOut" },
+      }}
+      slotProps={{
+        backdrop: {
+          component: motion.div,
+          initial: { opacity: 0 },
+          animate: open ? { opacity: 1 } : {},
+          transition: { duration: 0.18 },
+        },
       }}
     >
       {/* top gradient bar */}
@@ -119,10 +135,24 @@ const InviteModal = ({ open, onClose, groups = [] }) => {
         }}
       />
 
+      {/* subtle shine */}
+      <Box
+        sx={{
+          position: "absolute",
+          inset: 0,
+          pointerEvents: "none",
+          background:
+            "radial-gradient(circle at 14% 10%, rgba(99,102,241,0.14), transparent 42%)",
+        }}
+      />
+
       <DialogTitle sx={{ pb: 1.2 }}>
         <Stack direction="row" alignItems="center" justifyContent="space-between">
           <Stack direction="row" spacing={1} alignItems="center">
-            <Box
+            <MotionBox
+              initial={{ rotate: -6, scale: 0.96, opacity: 0 }}
+              animate={open ? { rotate: 0, scale: 1, opacity: 1 } : {}}
+              transition={{ duration: 0.25, ease: "easeOut" }}
               sx={{
                 width: 40,
                 height: 40,
@@ -134,7 +164,7 @@ const InviteModal = ({ open, onClose, groups = [] }) => {
               }}
             >
               <MailOutlineIcon sx={{ color: "#2563eb" }} />
-            </Box>
+            </MotionBox>
 
             <Box>
               <Typography sx={{ fontWeight: 900, fontSize: 18 }}>
@@ -166,7 +196,15 @@ const InviteModal = ({ open, onClose, groups = [] }) => {
               setErrMsg("");
               setSuccessMsg("");
             }}
-            sx={{ "& .MuiOutlinedInput-root": { borderRadius: 4 } }}
+            sx={{
+              "& .MuiOutlinedInput-root": {
+                borderRadius: 4,
+                "&.Mui-focused fieldset": {
+                  borderColor: alpha("#2563eb", 0.6),
+                  boxShadow: "0 0 0 4px rgba(37,99,235,0.10)",
+                },
+              },
+            }}
           >
             {groupOptions.length === 0 ? (
               <MenuItem value="" disabled>
@@ -203,12 +241,23 @@ const InviteModal = ({ open, onClose, groups = [] }) => {
                 </InputAdornment>
               ),
             }}
-            sx={{ "& .MuiOutlinedInput-root": { borderRadius: 4 } }}
+            sx={{
+              "& .MuiOutlinedInput-root": {
+                borderRadius: 4,
+                "&.Mui-focused fieldset": {
+                  borderColor: alpha("#2563eb", 0.6),
+                  boxShadow: "0 0 0 4px rgba(37,99,235,0.10)",
+                },
+              },
+            }}
           />
 
           {/* success section */}
           {successMsg && (
-            <Box
+            <MotionBox
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.25, ease: "easeOut" }}
               sx={{
                 p: 1.2,
                 borderRadius: 3,
@@ -219,18 +268,30 @@ const InviteModal = ({ open, onClose, groups = [] }) => {
               <Stack direction="row" spacing={1} alignItems="center">
                 <MarkEmailReadIcon sx={{ color: "#16a34a" }} />
                 <Box sx={{ flex: 1 }}>
-                  <Typography sx={{ fontWeight: 900, fontSize: 13, color: "#16a34a" }}>
+                  <Typography
+                    sx={{
+                      fontWeight: 900,
+                      fontSize: 13,
+                      color: "#16a34a",
+                    }}
+                  >
                     {successMsg}
                   </Typography>
                   {lastSent && (
                     <Typography sx={{ fontSize: 12, opacity: 0.75 }}>
-                      Sent to <b>{lastSent}</b> {selectedGroupName ? `• Group: ${selectedGroupName}` : ""}
+                      Sent to <b>{lastSent}</b>{" "}
+                      {selectedGroupName ? `• Group: ${selectedGroupName}` : ""}
                     </Typography>
                   )}
                 </Box>
-                <Chip size="small" color="success" label="Sent" sx={{ fontWeight: 900 }} />
+                <Chip
+                  size="small"
+                  color="success"
+                  label="Sent"
+                  sx={{ fontWeight: 900 }}
+                />
               </Stack>
-            </Box>
+            </MotionBox>
           )}
         </Stack>
       </DialogContent>
@@ -246,6 +307,9 @@ const InviteModal = ({ open, onClose, groups = [] }) => {
             textTransform: "none",
             px: 2.2,
           }}
+          component={motion.button}
+          whileHover={{ scale: 1.02 }}
+          whileTap={{ scale: 0.98 }}
         >
           Cancel
         </Button>
@@ -262,6 +326,9 @@ const InviteModal = ({ open, onClose, groups = [] }) => {
             bgcolor: "#2563eb",
             "&:hover": { bgcolor: "#1d4ed8" },
           }}
+          component={motion.button}
+          whileHover={{ scale: 1.02 }}
+          whileTap={{ scale: 0.98 }}
         >
           {loading ? (
             <>

@@ -7,10 +7,10 @@ import {
   deleteGroup,
   deleteMember,
   getGroupById,
-  getMyGroups, 
+  getMyGroups,         
 } from "../controllers/group.controllers.js";
 
-import { sendInvite, acceptInviteSignup , verifyToken,acceptInviteExisting,getSentInvites } from "../controllers/invite.controllers.js";
+import { sendInvite, acceptInviteSignup , verifyToken,acceptInviteExisting,getSentInvites,fixOldInvites  } from "../controllers/invite.controllers.js";
 import { body,param} from "express-validator";
 
 const router = express.Router();
@@ -104,6 +104,9 @@ router.post(
 );
 
 router.get("/invites/sent", verifyJWT, getSentInvites);
+// ✅ Fix old pending invites (Protected)
+router.post("/invites/fix-old", verifyJWT, fixOldInvites);
+
 
 
 export default router;

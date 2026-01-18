@@ -25,7 +25,10 @@ const AppLayout = () => {
       <CssBaseline />
 
       {/* Sidebar */}
-      <Box component="nav" sx={{ width: { md: drawerWidth }, flexShrink: { md: 0 } }}>
+      <Box
+        component="nav"
+        sx={{ width: { md: drawerWidth }, flexShrink: { md: 0 } }}
+      >
         {/* Mobile */}
         <Drawer
           variant="temporary"
@@ -81,7 +84,15 @@ const AppLayout = () => {
 
           {/* ✅ Center Wrapper Added Here */}
           <Box sx={{ p: { xs: 2, md: 3 } }}>
-            <Box sx={{ maxWidth: 1200, mx: "auto" }}>
+            <Box
+              component="main"
+              sx={{
+                flexGrow: 1,
+                px: { xs: 1.2, md: 3 },
+                pt: { xs: 1.2, md: 2.4 },
+                pb: { xs: 4, md: 0 },
+              }}
+            >
               <Outlet />
             </Box>
           </Box>

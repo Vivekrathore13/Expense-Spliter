@@ -4,16 +4,23 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import axiosInstance from "../../services/axiosinstance.js";
+import { motion } from "framer-motion";
+
+const fadeLeft = {
+  hidden: { opacity: 0, x: -28 },
+  show: { opacity: 1, x: 0, transition: { duration: 0.75, ease: "easeOut" } },
+};
+
+const fadeRight = {
+  hidden: { opacity: 0, x: 28 },
+  show: { opacity: 1, x: 0, transition: { duration: 0.75, ease: "easeOut" } },
+};
 
 const Login = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const [form, setForm] = useState({
-    email: "",
-    password: "",
-  });
-
+  const [form, setForm] = useState({ email: "", password: "" });
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
 
@@ -21,9 +28,7 @@ const Login = () => {
 
   useEffect(() => {
     const token = localStorage.getItem("accessToken");
-    if (token && !inviteToken) {
-      navigate("/dashboard");
-    }
+    if (token && !inviteToken) navigate("/dashboard");
   }, [inviteToken, navigate]);
 
   const handleChange = (e) => {
@@ -40,27 +45,21 @@ const Login = () => {
 
     setLoading(true);
     try {
-     const response = await axiosInstance.post("/login", {
-  email: form.email.trim(),
-  password: form.password.trim(),
-});
+      const response = await axiosInstance.post("/login", {
+        email: form.email.trim(),
+        password: form.password.trim(),
+      });
 
-// ✅ store token
-const accessToken = response?.data?.data?.accessToken;
-if (accessToken) localStorage.setItem("accessToken", accessToken);
+      const accessToken = response?.data?.data?.accessToken;
+      if (accessToken) localStorage.setItem("accessToken", accessToken);
 
-// ✅ store user
-const user = response?.data?.data?.user;
-if (user) localStorage.setItem("user", JSON.stringify(user));
+      const user = response?.data?.data?.user;
+      if (user) localStorage.setItem("user", JSON.stringify(user));
 
-toast.success(response?.data?.message || "Login Successfully ✅");
+      toast.success(response?.data?.message || "Login Successfully ✅");
 
-      // ✅ redirect immediately (no need setTimeout)
-      if (inviteToken) {
-        navigate(`/join-group?token=${inviteToken}`);
-      } else {
-        navigate("/dashboard");
-      }
+      if (inviteToken) navigate(`/join-group?token=${inviteToken}`);
+      else navigate("/dashboard");
     } catch (error) {
       toast.error(error?.response?.data?.message || "Login Failed ❌");
     } finally {
@@ -72,12 +71,24 @@ toast.success(response?.data?.message || "Login Successfully ✅");
     <>
       <ToastContainer position="top-right" autoClose={2000} />
 
-      <div className="min-h-screen w-full bg-gradient-to-br from-blue-50 via-white to-blue-100 flex items-center justify-center px-4 py-10">
-        <div className="w-full max-w-5xl rounded-[32px] overflow-hidden shadow-2xl border border-blue-100 bg-white/80 backdrop-blur-md grid grid-cols-1 md:grid-cols-2">
+      <div className="relative min-h-screen w-full overflow-hidden flex items-center justify-center px-4 py-10">
+        {/* BG */}
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_12%_18%,rgba(59,130,246,0.22)_0%,rgba(59,130,246,0)_40%),radial-gradient(circle_at_86%_22%,rgba(168,85,247,0.18)_0%,rgba(168,85,247,0)_45%),radial-gradient(circle_at_52%_92%,rgba(14,165,233,0.16)_0%,rgba(14,165,233,0)_40%),linear-gradient(135deg,#EEF2FF_0%,#E9D5FF_45%,#DBEAFE_100%)]" />
+
+        {/* Floating blobs */}
+        <div className="pointer-events-none absolute -top-20 -left-24 h-72 w-72 rounded-full bg-blue-400/25 blur-3xl animate-floaty" />
+        <div className="pointer-events-none absolute top-20 -right-28 h-80 w-80 rounded-full bg-purple-500/20 blur-3xl animate-floaty2" />
+        <div className="pointer-events-none absolute -bottom-28 left-1/3 h-96 w-96 rounded-full bg-sky-400/20 blur-3xl animate-floaty" />
+
+        <motion.div
+          initial="hidden"
+          animate="show"
+          className="relative w-full max-w-5xl rounded-[32px] overflow-hidden border border-white/45 bg-white/40 backdrop-blur-2xl shadow-[0_20px_65px_rgba(0,0,0,0.16)] grid grid-cols-1 md:grid-cols-2"
+        >
           {/* LEFT */}
-          <div className="p-10 md:p-14 flex flex-col justify-center">
+          <motion.div variants={fadeLeft} className="p-10 md:p-14 flex flex-col justify-center">
             <button
-              className="flex items-center gap-2 text-sm text-gray-600 hover:text-blue-700 transition w-fit"
+              className="flex items-center gap-2 text-sm text-gray-700/80 hover:text-blue-700 transition w-fit"
               onClick={() => window.history.back()}
             >
               <ArrowLeft className="w-4 h-4" />
@@ -86,31 +97,41 @@ toast.success(response?.data?.message || "Login Successfully ✅");
 
             <h1 className="text-4xl md:text-5xl font-extrabold text-gray-900 leading-tight mt-6">
               Welcome back to <br />
-              <span className="text-blue-600">Expense Splitter</span>
+              <span className="bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+                Expense Splitter
+              </span>
             </h1>
 
-            <p className="text-gray-600 mt-5 text-lg leading-relaxed">
-              Login to continue splitting expenses, tracking balances and
-              settling up instantly.
+            <p className="text-gray-700/90 mt-5 text-lg leading-relaxed">
+              Login to continue splitting expenses, tracking balances and settling up instantly.
             </p>
 
-            <p className="text-sm text-gray-500 mt-10">
+            <p className="text-sm text-gray-700/70 mt-10">
               Don&apos;t have an account?{" "}
               <span
-                onClick={() => {
-                  if (inviteToken) navigate(`/signup?token=${inviteToken}`);
-                  else navigate("/signup");
-                }}
-                className="text-blue-600 font-semibold cursor-pointer hover:underline"
+                onClick={() => (inviteToken ? navigate(`/signup?token=${inviteToken}`) : navigate("/signup"))}
+                className="text-blue-700 font-semibold cursor-pointer hover:underline"
               >
                 Sign Up
               </span>
             </p>
-          </div>
+          </motion.div>
 
           {/* RIGHT */}
-          <div className="relative p-10 md:p-14 bg-gradient-to-br from-blue-100 to-indigo-200 flex items-center justify-center">
-            <div className="w-full max-w-md rounded-3xl bg-white/60 backdrop-blur-md border border-white/70 shadow-2xl p-8">
+          <motion.div variants={fadeRight} className="relative p-10 md:p-14 flex items-center justify-center">
+            <div className="absolute inset-0 bg-white/20" />
+            <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 to-indigo-600/10" />
+
+            <motion.div
+              initial={{ opacity: 0, y: 24, scale: 0.975 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              transition={{ duration: 0.75, ease: "easeOut" }}
+              className="relative w-full max-w-md rounded-3xl bg-white/55 backdrop-blur-2xl border border-white/60 shadow-[0_22px_55px_rgba(0,0,0,0.16)] p-8"
+            >
+              <div className="w-fit mb-4 px-3 py-1 rounded-full border border-white/60 bg-white/50 text-xs font-semibold text-gray-700">
+                🔒 Secure Login
+              </div>
+
               <h2 className="text-2xl font-bold text-gray-900">
                 {inviteToken ? "Login to Accept Invite" : "Login"}
               </h2>
@@ -121,7 +142,7 @@ toast.success(response?.data?.message || "Login Successfully ✅");
                   <label className="text-sm font-medium text-gray-700">
                     Email <span className="text-red-500">*</span>
                   </label>
-                  <div className="mt-2 flex items-center gap-2 bg-white rounded-xl border border-gray-200 px-4 py-3 focus-within:border-blue-500">
+                  <div className="mt-2 flex items-center gap-2 bg-white/75 rounded-xl border border-white/70 px-4 py-3 focus-within:border-blue-500/80 focus-within:ring-2 focus-within:ring-blue-200">
                     <Mail className="w-5 h-5 text-gray-400" />
                     <input
                       type="email"
@@ -129,7 +150,7 @@ toast.success(response?.data?.message || "Login Successfully ✅");
                       value={form.email}
                       onChange={handleChange}
                       placeholder="Enter your email"
-                      className="w-full outline-none text-gray-700 bg-transparent"
+                      className="w-full outline-none text-gray-800 bg-transparent placeholder:text-gray-400"
                     />
                   </div>
                 </div>
@@ -139,7 +160,7 @@ toast.success(response?.data?.message || "Login Successfully ✅");
                   <label className="text-sm font-medium text-gray-700">
                     Password <span className="text-red-500">*</span>
                   </label>
-                  <div className="mt-2 flex items-center gap-2 bg-white rounded-xl border border-gray-200 px-4 py-3 focus-within:border-blue-500">
+                  <div className="mt-2 flex items-center gap-2 bg-white/75 rounded-xl border border-white/70 px-4 py-3 focus-within:border-blue-500/80 focus-within:ring-2 focus-within:ring-blue-200">
                     <Lock className="w-5 h-5 text-gray-400" />
                     <input
                       type={showPassword ? "text" : "password"}
@@ -147,49 +168,50 @@ toast.success(response?.data?.message || "Login Successfully ✅");
                       value={form.password}
                       onChange={handleChange}
                       placeholder="Enter password"
-                      className="w-full outline-none text-gray-700 bg-transparent"
+                      className="w-full outline-none text-gray-800 bg-transparent placeholder:text-gray-400"
                     />
                     <button
                       type="button"
                       onClick={() => setShowPassword((s) => !s)}
                       className="text-gray-400 hover:text-gray-700"
                     >
-                      {showPassword ? (
-                        <EyeOff className="w-5 h-5" />
-                      ) : (
-                        <Eye className="w-5 h-5" />
-                      )}
+                      {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                     </button>
                   </div>
                 </div>
 
                 {/* Submit */}
-                <button
+                <motion.button
+                  whileHover={{ scale: 1.012 }}
+                  whileTap={{ scale: 0.99 }}
                   type="submit"
                   disabled={loading}
                   className="w-full rounded-2xl font-semibold text-white px-6 py-3 
                   bg-gradient-to-r from-blue-600 to-indigo-600 shadow-lg
-                  hover:shadow-2xl hover:scale-[1.01] active:scale-[0.99]
-                  transition-all duration-300 disabled:opacity-70 disabled:cursor-not-allowed"
+                  hover:shadow-2xl transition-all duration-300 disabled:opacity-70 disabled:cursor-not-allowed relative overflow-hidden"
                 >
-                  {loading ? (
-                    <span className="flex items-center justify-center gap-2">
-                      <Loader2 className="w-5 h-5 animate-spin" />
-                      Logging in...
-                    </span>
-                  ) : inviteToken ? (
-                    "Login & Join Group"
-                  ) : (
-                    "Login"
-                  )}
-                </button>
+                  <span className="absolute inset-0 opacity-0 hover:opacity-100 transition-opacity duration-300 bg-[radial-gradient(circle_at_30%_30%,rgba(255,255,255,0.35)_0%,rgba(255,255,255,0)_60%)]" />
+                  <span className="absolute -left-1/2 top-0 h-full w-1/2 bg-white/25 skew-x-[-20deg] translate-x-[-180%] hover:translate-x-[250%] transition-transform duration-700" />
+                  <span className="relative">
+                    {loading ? (
+                      <span className="flex items-center justify-center gap-2">
+                        <Loader2 className="w-5 h-5 animate-spin" />
+                        Logging in...
+                      </span>
+                    ) : inviteToken ? (
+                      "Login & Join Group"
+                    ) : (
+                      "Login"
+                    )}
+                  </span>
+                </motion.button>
               </form>
-            </div>
+            </motion.div>
 
-            <div className="absolute -top-6 -left-6 w-20 h-20 bg-blue-300/40 blur-2xl rounded-full"></div>
-            <div className="absolute -bottom-8 -right-6 w-24 h-24 bg-indigo-400/40 blur-2xl rounded-full"></div>
-          </div>
-        </div>
+            <div className="pointer-events-none absolute -top-6 -left-6 w-20 h-20 bg-blue-300/35 blur-2xl rounded-full animate-floaty" />
+            <div className="pointer-events-none absolute -bottom-8 -right-6 w-24 h-24 bg-indigo-400/35 blur-2xl rounded-full animate-floaty2" />
+          </motion.div>
+        </motion.div>
       </div>
     </>
   );

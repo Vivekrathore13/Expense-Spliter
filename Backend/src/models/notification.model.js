@@ -17,7 +17,13 @@ const notificationSchema = new mongoose.Schema(
 
     type: {
       type: String,
-      enum: ["INVITE", "EXPENSE", "SETTLEMENT", "INFO"],
+      enum: [
+        "INVITE",
+        "EXPENSE",
+        "SETTLEMENT",
+        "INFO",
+        "PAYMENT_DETAILS_REQUEST", // ✅ added for future feature
+      ],
       default: "INFO",
     },
 
@@ -44,7 +50,7 @@ const notificationSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-// faster fetch
+// ✅ faster fetch
 notificationSchema.index({ userId: 1, createdAt: -1 });
 
 export const Notification = mongoose.model("Notification", notificationSchema);

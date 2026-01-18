@@ -25,6 +25,8 @@ import PrivateRoute from "./PrivateRoute";
 // ✅ Notifications
 import NotificationsPage from "../Components/Notifications/NotificationsPage";
 
+import SettingsPage from "../Components/Settings/SettingsPage";
+
 const Page = ({ title }) => (
   <div style={{ fontWeight: 900, fontSize: 22 }}>{title}</div>
 );
@@ -79,7 +81,7 @@ const AppRoutes = () => {
         <Route path="settle" element={<SettleHome />} />
         <Route path="settle-up/:groupId" element={<SettleUpPage />} />
 
-        <Route path="settings" element={<Page title="Settings Page" />} />
+        <Route path="/settings" element={<SettingsPage />} />
 
         {/* ✅ Notifications */}
         <Route path="notifications" element={<NotificationsPage />} />

@@ -8,3 +8,6 @@ export const createGroupAPI = (payload) =>
 // ✅ NEW: send invite
 export const sendInviteAPI = (groupId, payload) =>
   axiosInstance.post(`/group/${groupId}/invite`, payload);
+
+export const fixOldInvitesAPI = () => axiosInstance.post("/invites/fix-old");
+

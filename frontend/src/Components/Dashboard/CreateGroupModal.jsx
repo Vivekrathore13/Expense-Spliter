@@ -17,15 +17,17 @@ import CloseIcon from "@mui/icons-material/Close";
 import GroupAddIcon from "@mui/icons-material/GroupAdd";
 import { alpha } from "@mui/material/styles";
 import { toast } from "react-toastify";
+import { motion } from "framer-motion";
 
 import { createGroupAPI } from "../../services/groupApi";
+
+const MotionBox = motion(Box);
 
 const CreateGroupModal = ({ open, onClose, onCreated }) => {
   const [groupname, setGroupname] = useState("");
   const [loading, setLoading] = useState(false);
   const [errMsg, setErrMsg] = useState("");
 
-  // reset when opened/closed
   useEffect(() => {
     if (!open) {
       setGroupname("");
@@ -41,7 +43,6 @@ const CreateGroupModal = ({ open, onClose, onCreated }) => {
       setErrMsg("Group name is required");
       return;
     }
-
     if (name.length < 3) {
       setErrMsg("Group name must be at least 3 characters");
       return;
@@ -52,12 +53,12 @@ const CreateGroupModal = ({ open, onClose, onCreated }) => {
       setLoading(true);
 
       const res = await createGroupAPI({ groupname: name });
-      const createdGroup = res?.data?.data || res?.data; // ✅ group object
+      const createdGroup = res?.data?.data || res?.data;
 
       toast.success("Group created ✅");
       setGroupname("");
       onClose?.();
-      onCreated?.(createdGroup); // ✅ pass created group back
+      onCreated?.(createdGroup);
     } catch (err) {
       const msg =
         err?.response?.data?.message ||
@@ -90,6 +91,20 @@ const CreateGroupModal = ({ open, onClose, onCreated }) => {
           backdropFilter: "blur(14px)",
           position: "relative",
         },
+        // ✅ motion animation on Paper
+        component: motion.div,
+        initial: { opacity: 0, y: 16, scale: 0.98 },
+        animate: open ? { opacity: 1, y: 0, scale: 1 } : {},
+        transition: { duration: 0.22, ease: "easeOut" },
+      }}
+      slotProps={{
+        backdrop: {
+          // ✅ backdrop animation
+          component: motion.div,
+          initial: { opacity: 0 },
+          animate: open ? { opacity: 1 } : {},
+          transition: { duration: 0.18 },
+        },
       }}
     >
       {/* top gradient bar */}
@@ -104,14 +119,24 @@ const CreateGroupModal = ({ open, onClose, onCreated }) => {
         }}
       />
 
+      {/* subtle shine */}
+      <Box
+        sx={{
+          position: "absolute",
+          inset: 0,
+          pointerEvents: "none",
+          background:
+            "radial-gradient(circle at 18% 10%, rgba(99,102,241,0.16), transparent 40%)",
+        }}
+      />
+
       <DialogTitle sx={{ pb: 1.2 }}>
-        <Stack
-          direction="row"
-          alignItems="center"
-          justifyContent="space-between"
-        >
+        <Stack direction="row" alignItems="center" justifyContent="space-between">
           <Stack direction="row" spacing={1.2} alignItems="center">
-            <Box
+            <MotionBox
+              initial={{ rotate: -6, scale: 0.96, opacity: 0 }}
+              animate={open ? { rotate: 0, scale: 1, opacity: 1 } : {}}
+              transition={{ duration: 0.25, ease: "easeOut" }}
               sx={{
                 width: 42,
                 height: 42,
@@ -123,7 +148,7 @@ const CreateGroupModal = ({ open, onClose, onCreated }) => {
               }}
             >
               <GroupAddIcon sx={{ color: "#2563eb" }} />
-            </Box>
+            </MotionBox>
 
             <Box>
               <Typography sx={{ fontWeight: 900, fontSize: 18 }}>
@@ -161,7 +186,13 @@ const CreateGroupModal = ({ open, onClose, onCreated }) => {
               if (e.key === "Enter") handleCreate();
             }}
             sx={{
-              "& .MuiOutlinedInput-root": { borderRadius: 4 },
+              "& .MuiOutlinedInput-root": {
+                borderRadius: 4,
+                "&.Mui-focused fieldset": {
+                  borderColor: alpha("#2563eb", 0.6),
+                  boxShadow: "0 0 0 4px rgba(37,99,235,0.10)",
+                },
+              },
             }}
           />
         </Stack>
@@ -184,6 +215,9 @@ const CreateGroupModal = ({ open, onClose, onCreated }) => {
               bgcolor: alpha("#0f172a", 0.03),
             },
           }}
+          component={motion.button}
+          whileHover={{ scale: 1.02 }}
+          whileTap={{ scale: 0.98 }}
         >
           Cancel
         </Button>
@@ -200,6 +234,9 @@ const CreateGroupModal = ({ open, onClose, onCreated }) => {
             bgcolor: "#2563eb",
             "&:hover": { bgcolor: "#1d4ed8" },
           }}
+          component={motion.button}
+          whileHover={{ scale: 1.02 }}
+          whileTap={{ scale: 0.98 }}
         >
           {loading ? (
             <>

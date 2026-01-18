@@ -3,26 +3,26 @@ import { ApiError } from "../utils/ApiError.js";
 import { User } from "../models/user.model.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { validationResult } from "express-validator";
-import jwt from 'jsonwebtoken'
-import mongoose  from "mongoose";
+import jwt from "jsonwebtoken";
+import mongoose from "mongoose";
 
+const generateAccessAndRefereshTokens = async (userId) => {
+  try {
+    const user = await User.findById(userId);
+    const accessToken = user.generateAccessToken();
+    const refreshToken = user.generateRefreshToken();
 
-const generateAccessAndRefereshTokens = async(userId) =>{
-    try {
-        const user = await User.findById(userId)
-        const accessToken = user.generateAccessToken()
-        const refreshToken = user.generateRefreshToken()
+    user.refreshToken = refreshToken;
+    await user.save({ validateBeforeSave: false });
 
-        user.refreshToken = refreshToken
-        await user.save({ validateBeforeSave: false })
-
-        return {accessToken, refreshToken}
-
-
-    } catch (error) {
-        throw new ApiError(500, "Something went wrong while generating referesh and access token")
-    }
-}
+    return { accessToken, refreshToken };
+  } catch (error) {
+    throw new ApiError(
+      500,
+      "Something went wrong while generating referesh and access token"
+    );
+  }
+};
 // REGISTER USER CONTROLLER
 const registerUser = asyncHandler(async (req, res) => {
   const { fullName, email, password } = req.body;
@@ -52,14 +52,14 @@ const registerUser = asyncHandler(async (req, res) => {
   });
 
   // ✅ remove sensitive fields
-  const createdUser = await User.findById(user._id).select("-password -refreshToken");
-
-  return res.status(201).json(
-    new ApiResponse(201, createdUser, "User registered successfully")
+  const createdUser = await User.findById(user._id).select(
+    "-password -refreshToken"
   );
+
+  return res
+    .status(201)
+    .json(new ApiResponse(201, createdUser, "User registered successfully"));
 });
-
-
 
 const loginUser = asyncHandler(async (req, res) => {
   const { email, password } = req.body;
@@ -84,8 +84,9 @@ const loginUser = asyncHandler(async (req, res) => {
   }
 
   // 4) generate tokens
-  const { accessToken, refreshToken } =
-    await generateAccessAndRefereshTokens(user._id);
+  const { accessToken, refreshToken } = await generateAccessAndRefereshTokens(
+    user._id
+  );
 
   // 5) exclude sensitive fields
   const loggedInUser = await User.findById(user._id).select(
@@ -95,8 +96,8 @@ const loginUser = asyncHandler(async (req, res) => {
   // 6) cookie options
   const options = {
     httpOnly: true,
-    secure: false, sameSite: "lax",
-
+    secure: false,
+    sameSite: "lax",
   };
   // 7) send response
   return res
@@ -113,13 +114,11 @@ const loginUser = asyncHandler(async (req, res) => {
 });
 
 const refreshAcessToken = asyncHandler(async (req, res) => {
- 
   const incomingRefreshToken =
     req.cookies?.refreshToken || req.body?.refreshToken;
 
-     console.log("incomingRefreshToken =>", incomingRefreshToken);
-console.log("type =>", typeof incomingRefreshToken);
-
+  console.log("incomingRefreshToken =>", incomingRefreshToken);
+  console.log("type =>", typeof incomingRefreshToken);
 
   if (!incomingRefreshToken) {
     throw new ApiError(401, "Unauthorized access");
@@ -133,19 +132,18 @@ console.log("type =>", typeof incomingRefreshToken);
 
     const user = await User.findById(decodedToken?._id).select("+refreshToken");
 
-if (!user) {
-  throw new ApiError(401, "Invalid refresh token");
-}
+    if (!user) {
+      throw new ApiError(401, "Invalid refresh token");
+    }
 
-if (incomingRefreshToken !== user.refreshToken) {
-  throw new ApiError(401, "Refresh token is expired or used");
-}
-
+    if (incomingRefreshToken !== user.refreshToken) {
+      throw new ApiError(401, "Refresh token is expired or used");
+    }
 
     const options = {
       httpOnly: true,
-      secure: false,     // ✅ dev mode
-      sameSite: "lax"
+      secure: false, // ✅ dev mode
+      sameSite: "lax",
     };
 
     // ✅ generate new pair
@@ -163,13 +161,12 @@ if (incomingRefreshToken !== user.refreshToken) {
           "Access token refreshed successfully"
         )
       );
-
   } catch (error) {
     throw new ApiError(401, error?.message || "Invalid refresh token");
   }
 });
 
- const logoutUser = asyncHandler(async (req, res) => {
+const logoutUser = asyncHandler(async (req, res) => {
   const userId = req.user?._id || req.user?.id;
 
   if (!userId) {
@@ -218,5 +215,37 @@ const updateProfile = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, user, "Profile updated successfully ✅"));
 });
 
+const updateUpiId = asyncHandler(async (req, res) => {
+  const userId = req.user?._id || req.user?.id;
+  const { upiId } = req.body;
 
-export { loginUser,registerUser,refreshAcessToken,logoutUser,updateProfile};
+  if (!userId) throw new ApiError(401, "Unauthorized");
+  if (!upiId || !upiId.trim()) throw new ApiError(400, "UPI ID is required");
+
+  const normalized = upiId.trim().toLowerCase();
+
+  // ✅ regex check extra safety
+  const upiRegex = /^[a-zA-Z0-9.\-_]{2,256}@[a-zA-Z]{2,64}$/;
+  if (!upiRegex.test(normalized)) {
+    throw new ApiError(400, "Invalid UPI ID format (example: name@upi)");
+  }
+
+  const user = await User.findByIdAndUpdate(
+    userId,
+    { upiId: normalized },
+    { new: true }
+  ).select("-password -refreshToken");
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, user, "UPI ID updated successfully ✅"));
+});
+
+export {
+  loginUser,
+  registerUser,
+  refreshAcessToken,
+  logoutUser,
+  updateProfile,
+  updateUpiId,
+};

@@ -51,3 +51,34 @@ body {
 ::-webkit-scrollbar-track {
   background: transparent;
 }
+
+
+/* ✅ Premium floating blobs animation */
+@keyframes floaty {
+  0%,
+  100% {
+    transform: translateY(0px) translateX(0px);
+  }
+  50% {
+    transform: translateY(-18px) translateX(8px);
+  }
+}
+
+@keyframes floaty2 {
+  0%,
+  100% {
+    transform: translateY(0px) translateX(0px);
+  }
+  50% {
+    transform: translateY(16px) translateX(-10px);
+  }
+}
+
+/* ✅ utility classes */
+.animate-floaty {
+  animation: floaty 7s ease-in-out infinite;
+}
+
+.animate-floaty2 {
+  animation: floaty2 9s ease-in-out infinite;
+}

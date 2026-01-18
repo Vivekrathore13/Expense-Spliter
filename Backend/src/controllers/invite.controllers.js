@@ -8,8 +8,6 @@ import { User } from "../models/user.model.js";
 import { sendEmail } from "../utils/sendEmail.js";
 import { sendNotification } from "../utils/notificationHelper.js";
 
-
-
 // ✅ same function as in user.controllers.js (copy here to avoid import confusion)
 const generateAccessAndRefereshTokens = async (userId) => {
   try {
@@ -41,6 +39,17 @@ export const sendInvite = asyncHandler(async (req, res) => {
   }
 
   const normalizedEmail = email.toLowerCase().trim();
+  const existedUser = await User.findOne({ email: normalizedEmail });
+
+  if (existedUser) {
+    const isAlreadyMember = group.member?.some(
+      (id) => id.toString() === existedUser._id.toString()
+    );
+
+    if (isAlreadyMember) {
+      throw new ApiError(409, "User is already a member of this group");
+    }
+  }
 
   // ✅ prevent duplicate pending invite
   const existing = await Invitation.findOne({
@@ -102,25 +111,25 @@ export const sendInvite = asyncHandler(async (req, res) => {
   });
 
   // ✅ ADD NOTIFICATION (invite sent)
-await sendNotification({
-  userId: req.user._id, // admin ko bhi
-  groupId,
-  type: "INVITE",
-  title: "Invitation Sent",
-  message: `Invite sent to ${normalizedEmail}`,
-  meta: { inviteId: invite._id, email: normalizedEmail, groupId },
+  await sendNotification({
+    userId: req.user._id, // admin ko bhi
+    groupId,
+    type: "INVITE",
+    title: "Invitation Sent",
+    message: `Invite sent to ${normalizedEmail}`,
+    meta: { inviteId: invite._id, email: normalizedEmail, groupId },
+  });
+
+  return res
+    .status(200)
+    .json(
+      new ApiResponse(
+        200,
+        { inviteId: invite._id, link: inviteLink },
+        "Invitation generated successfully"
+      )
+    );
 });
-
-
-  return res.status(200).json(
-    new ApiResponse(
-      200,
-      { inviteId: invite._id, link: inviteLink },
-      "Invitation generated successfully"
-    )
-  );
-});
-
 
 // ✅ 2) VERIFY TOKEN (Public)
 export const verifyToken = asyncHandler(async (req, res) => {
@@ -191,14 +200,23 @@ export const acceptInviteExisting = asyncHandler(async (req, res) => {
   }
 
   // ✅ If already member
+  // ✅ if user already exists and already member -> don't send invite
+
   const alreadyMember = group.member?.some(
     (id) => id.toString() === userId.toString()
   );
 
   if (alreadyMember) {
+    // ✅ IMPORTANT: mark invite accepted even if already member
+    invite.status = "ACCEPTED";
+    invite.acceptedAt = new Date();
+    await invite.save();
+
     return res
       .status(200)
-      .json(new ApiResponse(200, { groupId: group._id }, "Already a member ✅"));
+      .json(
+        new ApiResponse(200, { groupId: group._id }, "Already a member ✅")
+      );
   }
 
   // ✅ Add user to group
@@ -211,38 +229,43 @@ export const acceptInviteExisting = asyncHandler(async (req, res) => {
   await invite.save();
 
   // ✅ NOTIFY USER
-await sendNotification({
-  userId: userId,
-  groupId: group._id,
-  type: "INVITE",
-  title: "Joined group ✅",
-  message: `You joined group successfully`,
-  meta: { groupId: group._id },
-});
+  await sendNotification({
+    userId: userId,
+    groupId: group._id,
+    type: "INVITE",
+    title: "Joined group ✅",
+    message: `You joined group successfully`,
+    meta: { groupId: group._id },
+  });
 
-// ✅ NOTIFY ADMIN
-await sendNotification({
-  userId: group.admin,
-  groupId: group._id,
-  type: "INVITE",
-  title: "New member joined",
-  message: `${user.fullName} joined your group`,
-  meta: { groupId: group._id, userId },
-});
-
+  // ✅ NOTIFY ADMIN
+  await sendNotification({
+    userId: group.admin,
+    groupId: group._id,
+    type: "INVITE",
+    title: "New member joined",
+    message: `${user.fullName} joined your group`,
+    meta: { groupId: group._id, userId },
+  });
 
   return res
     .status(200)
-    .json(new ApiResponse(200, { groupId: group._id }, "Joined group successfully ✅"));
+    .json(
+      new ApiResponse(
+        200,
+        { groupId: group._id },
+        "Joined group successfully ✅"
+      )
+    );
 });
-
 
 // ✅ 3) ACCEPT INVITE + SIGNUP + AUTO LOGIN (Public)
 export const acceptInviteSignup = asyncHandler(async (req, res) => {
   const { token, fullName, password } = req.body;
 
   if (!token) throw new ApiError(400, "Token is required");
-  if (!fullName || !password) throw new ApiError(400, "Full name and password are required");
+  if (!fullName || !password)
+    throw new ApiError(400, "Full name and password are required");
 
   // ✅ verify jwt token
   let decoded;
@@ -291,7 +314,9 @@ export const acceptInviteSignup = asyncHandler(async (req, res) => {
   });
 
   // ✅ Add to group (avoid duplicates)
-  const alreadyMember = group.member.some((id) => id.toString() === user._id.toString());
+  const alreadyMember = group.member.some(
+    (id) => id.toString() === user._id.toString()
+  );
   if (!alreadyMember) {
     group.member.push(user._id);
     await group.save();
@@ -303,9 +328,13 @@ export const acceptInviteSignup = asyncHandler(async (req, res) => {
   await invite.save();
 
   // ✅ generate login tokens
-  const { accessToken, refreshToken } = await generateAccessAndRefereshTokens(user._id);
+  const { accessToken, refreshToken } = await generateAccessAndRefereshTokens(
+    user._id
+  );
 
-  const safeUser = await User.findById(user._id).select("-password -refreshToken");
+  const safeUser = await User.findById(user._id).select(
+    "-password -refreshToken"
+  );
 
   const options = {
     httpOnly: true,
@@ -314,25 +343,24 @@ export const acceptInviteSignup = asyncHandler(async (req, res) => {
   };
 
   // ✅ NOTIFY USER
-await sendNotification({
-  userId: user._id,
-  groupId: group._id,
-  type: "INVITE",
-  title: "Joined group ✅",
-  message: `You joined group successfully`,
-  meta: { groupId: group._id },
-});
+  await sendNotification({
+    userId: user._id,
+    groupId: group._id,
+    type: "INVITE",
+    title: "Joined group ✅",
+    message: `You joined group successfully`,
+    meta: { groupId: group._id },
+  });
 
-// ✅ NOTIFY ADMIN
-await sendNotification({
-  userId: group.admin,
-  groupId: group._id,
-  type: "INVITE",
-  title: "New member joined",
-  message: `${user.fullName} joined your group`,
-  meta: { groupId: group._id, userId: user._id },
-});
-
+  // ✅ NOTIFY ADMIN
+  await sendNotification({
+    userId: group.admin,
+    groupId: group._id,
+    type: "INVITE",
+    title: "New member joined",
+    message: `${user.fullName} joined your group`,
+    meta: { groupId: group._id, userId: user._id },
+  });
 
   return res
     .status(201)
@@ -369,12 +397,47 @@ export const getSentInvites = asyncHandler(async (req, res) => {
     groupName: inv.groupId?.groupname || "",
   }));
 
-  return res.status(200).json(
-    new ApiResponse(200, formatted, "Sent invites fetched successfully ✅")
-  );
+  return res
+    .status(200)
+    .json(
+      new ApiResponse(200, formatted, "Sent invites fetched successfully ✅")
+    );
 });
 
 
+// ✅ FIX OLD INVITES (Admin only)
+// Pending invites ko ACCEPTED mark karega agar user already group member ban chuka hai
+export const fixOldInvites = asyncHandler(async (req, res) => {
+  const userId = req.user?._id;
 
+  // ✅ sirf admin ke sent pending invites
+  const invites = await Invitation.find({
+    invitedBy: userId,
+    status: "PENDING",
+  });
 
-  
+  let fixed = 0;
+
+  for (const inv of invites) {
+    const user = await User.findOne({ email: inv.email.toLowerCase() });
+    if (!user) continue;
+
+    const group = await Group.findById(inv.groupId);
+    if (!group) continue;
+
+    const isMember = group.member?.some(
+      (id) => id.toString() === user._id.toString()
+    );
+
+    if (isMember) {
+      inv.status = "ACCEPTED";
+      inv.acceptedAt = new Date();
+      await inv.save();
+      fixed++;
+    }
+  }
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, { fixed }, "Old pending invites fixed ✅"));
+});

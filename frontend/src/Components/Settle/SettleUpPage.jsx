@@ -28,10 +28,13 @@ import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import LightbulbIcon from "@mui/icons-material/Lightbulb";
 import SavingsIcon from "@mui/icons-material/Savings";
+import LockIcon from "@mui/icons-material/Lock";
+import ContentCopyIcon from "@mui/icons-material/ContentCopy";
+import PaymentIcon from "@mui/icons-material/Payment";
 
 const formatINR = (num) =>
   new Intl.NumberFormat("en-IN", { maximumFractionDigits: 0 }).format(
-    Number(num || 0)
+    Number(num || 0),
   );
 
 // ✅ Common SoftCard like Dashboard
@@ -61,6 +64,9 @@ const SettleUpPage = () => {
   const [groupSummary, setGroupSummary] = useState(null);
 
   const [settlingKey, setSettlingKey] = useState(null);
+  // ✅ logged in user id
+  const user = JSON.parse(localStorage.getItem("user") || "null");
+  const loggedInUserId = user?._id;
 
   // ✅ userId -> name
   const userMap = useMemo(() => {
@@ -70,6 +76,43 @@ const SettleUpPage = () => {
   }, [balances]);
 
   const getName = (id) => userMap.get(String(id)) || "User";
+
+  // ✅ Copy helper
+  const copyText = async (text) => {
+    try {
+      await navigator.clipboard.writeText(String(text || ""));
+      toast.success("Copied ✅");
+    } catch {
+      toast.error("Copy failed");
+    }
+  };
+
+  // ✅ UPI deep link builder
+  const buildUpiLink = ({ toUpiId, toName, amount }) => {
+    const pa = encodeURIComponent((toUpiId || "").trim());
+    const pn = encodeURIComponent((toName || "Expense Splitter").trim());
+    const am = encodeURIComponent(Number(amount || 0).toFixed(2));
+    const tn = encodeURIComponent("Expense Splitter Settlement");
+    const cu = "INR";
+
+    return `upi://pay?pa=${pa}&pn=${pn}&am=${am}&tn=${tn}&cu=${cu}`;
+  };
+
+  const handlePayViaUpi = (s) => {
+    if (!s?.toUpiId?.trim()) {
+      toast.error("Receiver UPI not available");
+      return;
+    }
+
+    const link = buildUpiLink({
+      toUpiId: s.toUpiId,
+      toName: getName(s.to),
+      amount: s.amount,
+    });
+
+    // ✅ opens UPI apps
+    window.location.href = link;
+  };
 
   const fetchAll = async () => {
     try {
@@ -114,7 +157,9 @@ const SettleUpPage = () => {
       fetchAll();
     } catch (err) {
       console.log(err);
-      toast.error(err?.response?.data?.message || "Failed to record settlement");
+      toast.error(
+        err?.response?.data?.message || "Failed to record settlement",
+      );
     } finally {
       setSettlingKey(null);
     }
@@ -255,7 +300,10 @@ const SettleUpPage = () => {
 
             {/* ✅ group summary */}
             {groupSummary ? (
-              <Stack spacing={1} alignItems={{ xs: "flex-start", md: "flex-end" }}>
+              <Stack
+                spacing={1}
+                alignItems={{ xs: "flex-start", md: "flex-end" }}
+              >
                 <Chip
                   icon={<GroupsIcon />}
                   label={`Group: ${groupSummary.groupName}`}
@@ -336,7 +384,9 @@ const SettleUpPage = () => {
                     </Avatar>
                     <Box>
                       <Typography fontWeight={950}>{b.fullName}</Typography>
-                      <Typography sx={{ fontSize: 13, color: "text.secondary" }}>
+                      <Typography
+                        sx={{ fontSize: 13, color: "text.secondary" }}
+                      >
                         Net position
                       </Typography>
                     </Box>
@@ -344,7 +394,7 @@ const SettleUpPage = () => {
 
                   <Chip
                     label={`${b.net >= 0 ? "gets" : "owes"} ₹${formatINR(
-                      Math.abs(b.net)
+                      Math.abs(b.net),
                     )}`}
                     sx={{
                       fontWeight: 950,
@@ -420,6 +470,9 @@ const SettleUpPage = () => {
                 const key = `${idx}-${s.from}-${s.to}-${s.amount}`;
                 const isSettling = settlingKey === key;
 
+                const canSettle = String(loggedInUserId) === String(s.from);
+                const receiverHasUpi = Boolean(s?.toUpiId?.trim());
+
                 return (
                   <Box
                     key={key}
@@ -455,7 +508,9 @@ const SettleUpPage = () => {
                         >
                           {getName(s.from)?.[0]?.toUpperCase()}
                         </Avatar>
-                        <Typography fontWeight={950}>{getName(s.from)}</Typography>
+                        <Typography fontWeight={950}>
+                          {getName(s.from)}
+                        </Typography>
 
                         <ArrowForward sx={{ opacity: 0.55 }} />
 
@@ -481,35 +536,178 @@ const SettleUpPage = () => {
                           variant="outlined"
                           sx={{ fontWeight: 900 }}
                         />
+
+                        {receiverHasUpi ? (
+                          <Chip
+                            size="small"
+                            label="UPI available"
+                            sx={{
+                              fontWeight: 900,
+                              bgcolor: "rgba(34,197,94,0.14)",
+                              color: "#16a34a",
+                              border: "1px solid rgba(34,197,94,0.22)",
+                            }}
+                          />
+                        ) : (
+                          <Chip
+                            size="small"
+                            label="No UPI"
+                            sx={{
+                              fontWeight: 900,
+                              bgcolor: "rgba(15,23,42,0.06)",
+                              color: "rgba(15,23,42,0.55)",
+                              border: "1px solid rgba(226,232,240,0.95)",
+                            }}
+                          />
+                        )}
                       </Stack>
 
-                      <Stack direction="row" spacing={1} alignItems="center">
+                      <Stack
+                        direction="row"
+                        spacing={1}
+                        alignItems="center"
+                        flexWrap="wrap"
+                      >
                         <Chip
                           icon={<SavingsIcon />}
                           label={`₹${formatINR(s.amount)}`}
                           sx={{ fontWeight: 950 }}
                         />
 
-                        <Tooltip title="Record this settlement">
-                          <Button
-                            variant="contained"
-                            disabled={isSettling}
-                            onClick={() => handleMarkSettled(s, idx)}
-                            sx={{
-                              fontWeight: 950,
-                              borderRadius: 999,
-                              px: 2.2,
-                              textTransform: "none",
-                            }}
+                        {/* ✅ Pay via UPI */}
+                        {receiverHasUpi ? (
+                          <Tooltip title={`Pay ${getName(s.to)} via UPI`}>
+                            <span>
+                              <Button
+                                onClick={() => handlePayViaUpi(s)}
+                                variant="outlined"
+                                startIcon={<PaymentIcon />}
+                                sx={{
+                                  borderRadius: 999,
+                                  fontWeight: 950,
+                                  textTransform: "none",
+                                }}
+                              >
+                                Pay via UPI
+                              </Button>
+                            </span>
+                          </Tooltip>
+                        ) : (
+                          <Tooltip
+                            title={`${getName(s.to)} has not added UPI ID yet`}
                           >
-                            {isSettling ? (
-                              <>
-                                <CircularProgress size={18} sx={{ mr: 1 }} /> Saving
-                              </>
-                            ) : (
-                              "Mark Settled"
-                            )}
-                          </Button>
+                            <span>
+                              <Button
+                                disabled
+                                variant="outlined"
+                                startIcon={<PaymentIcon />}
+                                sx={{
+                                  borderRadius: 999,
+                                  fontWeight: 950,
+                                  textTransform: "none",
+                                }}
+                              >
+                                UPI Not Available
+                              </Button>
+                            </span>
+                          </Tooltip>
+                        )}
+
+                        {/* ✅ Copy UPI */}
+                        {receiverHasUpi ? (
+                          <Tooltip title="Copy receiver UPI ID">
+                            <span>
+                              <Button
+                                onClick={() => copyText(s.toUpiId)}
+                                variant="outlined"
+                                startIcon={<ContentCopyIcon />}
+                                sx={{
+                                  borderRadius: 999,
+                                  fontWeight: 950,
+                                  textTransform: "none",
+                                }}
+                              >
+                                Copy UPI
+                              </Button>
+                            </span>
+                          </Tooltip>
+                        ) : null}
+
+                        <Tooltip
+                          title={
+                            canSettle
+                              ? "Record this settlement"
+                              : `Only ${getName(
+                                  s.from,
+                                )} can mark this settlement`
+                          }
+                        >
+                          <span>
+                            <Button
+                              variant="contained"
+                              disabled={!canSettle || isSettling}
+                              onClick={() => handleMarkSettled(s, idx)}
+                              sx={{
+                                fontWeight: 950,
+                                borderRadius: 999,
+                                px: 2.2,
+                                textTransform: "none",
+                                opacity: canSettle ? 1 : 0.55,
+                                cursor: canSettle ? "pointer" : "not-allowed",
+                                bgcolor: canSettle
+                                  ? undefined
+                                  : "rgba(15,23,42,0.06)",
+                                color: canSettle
+                                  ? undefined
+                                  : "rgba(15,23,42,0.45)",
+                                boxShadow: "none",
+                                "&:hover": { boxShadow: "none" },
+                                "&.Mui-disabled": {
+                                  opacity: 1,
+                                  bgcolor: "rgba(245,158,11,0.14)",
+                                  color: "#92400e",
+                                  border: "1px solid rgba(245,158,11,0.32)",
+                                  boxShadow:
+                                    "0 12px 35px rgba(245,158,11,0.20)", // ✅ glow
+                                },
+                              }}
+                            >
+                              {isSettling ? (
+                                <>
+                                  <CircularProgress size={18} sx={{ mr: 1 }} />{" "}
+                                  Saving
+                                </>
+                              ) : canSettle ? (
+                                "Mark Settled"
+                              ) : (
+                                <span
+                                  style={{
+                                    display: "inline-flex",
+                                    alignItems: "center",
+                                    gap: 8,
+                                    fontWeight: 950,
+                                    color: "#92400e",
+                                  }}
+                                >
+                                  <span
+                                    style={{
+                                      width: 24,
+                                      height: 24,
+                                      display: "grid",
+                                      placeItems: "center",
+                                      borderRadius: 999,
+                                      background: "rgba(245,158,11,0.22)", // ✅ yellow highlight
+                                      border: "1px solid rgba(245,158,11,0.45)",
+                                      color: "#b45309",
+                                    }}
+                                  >
+                                    <LockIcon sx={{ fontSize: 15 }} />
+                                  </span>
+                                  Locked
+                                </span>
+                              )}
+                            </Button>
+                          </span>
                         </Tooltip>
                       </Stack>
                     </Stack>
@@ -586,7 +784,7 @@ const SettleUpPage = () => {
                         size="small"
                         variant="outlined"
                         label={new Date(
-                          h.settledAt || h.createdAt
+                          h.settledAt || h.createdAt,
                         ).toLocaleString()}
                         sx={{ fontWeight: 900 }}
                       />
