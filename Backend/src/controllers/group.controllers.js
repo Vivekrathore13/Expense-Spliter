@@ -49,24 +49,22 @@ const createGroup = asyncHandler(async (req, res) => {
 
 
 export const getMyGroups = asyncHandler(async (req, res) => {
-  const userId = req.user?.id;
+  const userId = req.user?._id || req.user?.id;
 
   if (!userId) {
     throw new ApiError(401, "Unauthorized request");
   }
 
   const groups = await Group.find({
-    member: new mongoose.Types.ObjectId(userId)
+    member: new mongoose.Types.ObjectId(userId),
   });
 
-  if (groups.length === 0) {
-    throw new ApiError(404, "No groups found for this user");
-  }
-
+  // ✅ IMPORTANT: empty groups ko error mat banao
   return res.status(200).json(
     new ApiResponse(200, groups, "Groups fetched successfully")
   );
 });
+
 
 export const getGroupById = asyncHandler(async (req, res) => {
   const { id } = req.params;
@@ -216,47 +214,52 @@ export const deleteGroup=asyncHandler(async(req,res) => {
 // check if the admin in not delelte it is preserved
 // check only admin have powers to delete the members in group
 
-export const deleteMember=asyncHandler(async(req,res)=>{
-  const {groupId,memberId}=req.params
-  const userId=req.user.id
+export const deleteMember = asyncHandler(async (req, res) => {
+  const { groupId, memberId } = req.params;
+  const userId = req.user.id;
 
-  if(!mongoose.isValidObjectId(groupId) || !mongoose.isValidObjectId(memberId)){
-    throw new ApiError(400 ,"Invalid id Format")
+  if (!mongoose.isValidObjectId(groupId) || !mongoose.isValidObjectId(memberId)) {
+    throw new ApiError(400, "Invalid id Format");
   }
 
-  const group=await Group.findById(groupId)
+  const group = await Group.findById(groupId);
 
-  if(!group){
-    throw new ApiError(400 ,"Group is not found")
+  if (!group) {
+    throw new ApiError(404, "Group not found");
   }
 
-  if(String(group.admin)!== String(userId)){
-    throw new ApiError(403,"only admin can remove members");
+  const isAdmin = String(group.admin) === String(userId);
+  const isSelf = String(memberId) === String(userId);
+
+  // ✅ permission rule
+  // Admin can remove anyone
+  // Member can remove only himself (leave)
+  if (!isAdmin && !isSelf) {
+    throw new ApiError(403, "Only admin can remove other members");
   }
 
-    // preserve the admin because admin have power to delete the person 
-     if(String(memberId)=== String(group.admin)){
-    throw new ApiError(403,"Admin cannot be remove from group");
+  // ✅ Admin cannot be removed (by anyone)
+  if (String(memberId) === String(group.admin)) {
+    throw new ApiError(403, "Admin cannot be removed from group");
   }
-  // main removing the member and update in the group 
 
-   // 5) Check member exists in group
-    const isMember = group.member.some(m => m.equals(memberId));
-    if (!isMember) {
-      throw new ApiError(404, "Member Not Part Of Group");
-    }
+  // ✅ check member exists in group
+  const isMember = group.member.some((m) => String(m) === String(memberId));
+  if (!isMember) {
+    throw new ApiError(404, "Member Not Part Of Group");
+  }
 
-    // ✅ 6) Atomic remove: $pull (best practice)
-    const updatedGroup = await Group.findByIdAndUpdate(
-      groupId,
-      { $pull: { member: memberId } },
-      { new: true } // return updated doc
-    ).populate("member", "username email"); // optional
+  // ✅ Remove member from group
+  const updatedGroup = await Group.findByIdAndUpdate(
+    groupId,
+    { $pull: { member: memberId } },
+    { new: true }
+  ).populate("member", "fullName email");
 
-    return res.status(200).json(
-      new ApiResponse(200,updatedGroup,"Member Removed Sucsessfully")
-    );
-})
+  return res.status(200).json(
+    new ApiResponse(200, updatedGroup, isSelf ? "Left group successfully" : "Member removed successfully")
+  );
+});
 
 
 

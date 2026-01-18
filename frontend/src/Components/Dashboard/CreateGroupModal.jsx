@@ -58,25 +58,24 @@ const CreateGroupModal = ({ open, onClose, onCreated }) => {
         sx: {
           borderRadius: 5,
           overflow: "hidden",
-          bgcolor: "rgba(255,255,255,0.7)",
-          border: "1px solid rgba(148,163,184,0.25)",
-          backdropFilter: "blur(14px)",
-          boxShadow: "0 22px 60px rgba(2,6,23,0.18)",
+          bgcolor: "rgba(255,255,255,0.95)",
+          border: "1px solid rgba(226,232,240,0.95)",
+          boxShadow: "0 24px 70px rgba(2,6,23,0.18)",
         },
       }}
     >
       <DialogTitle sx={{ pb: 1.2 }}>
         <Stack direction="row" alignItems="center" justifyContent="space-between">
-          <Stack direction="row" spacing={1} alignItems="center">
+          <Stack direction="row" spacing={1.2} alignItems="center">
             <Box
               sx={{
-                width: 36,
-                height: 36,
-                borderRadius: 3,
-                bgcolor: alpha("#2563eb", 0.12),
+                width: 40,
+                height: 40,
+                borderRadius: 4,
+                bgcolor: alpha("#2563eb", 0.10),
+                border: `1px solid ${alpha("#2563eb", 0.18)}`,
                 display: "grid",
                 placeItems: "center",
-                border: `1px solid ${alpha("#2563eb", 0.18)}`,
               }}
             >
               <GroupAddIcon sx={{ color: "#2563eb" }} />
@@ -124,6 +123,12 @@ const CreateGroupModal = ({ open, onClose, onCreated }) => {
             fontWeight: 900,
             textTransform: "none",
             px: 2.2,
+            borderColor: alpha("#0f172a", 0.18),
+            color: alpha("#0f172a", 0.85),
+            "&:hover": {
+              borderColor: alpha("#0f172a", 0.28),
+              bgcolor: alpha("#0f172a", 0.03),
+            },
           }}
         >
           Cancel
@@ -137,7 +142,7 @@ const CreateGroupModal = ({ open, onClose, onCreated }) => {
             borderRadius: 999,
             fontWeight: 900,
             textTransform: "none",
-            px: 2.4,
+            px: 2.6,
             bgcolor: "#2563eb",
             "&:hover": { bgcolor: "#1d4ed8" },
           }}

@@ -6,7 +6,7 @@ import { useTheme } from "@mui/material/styles";
 import Sidebar from "./Sidebar";
 import Topbar from "./Topbar";
 
-const drawerWidth = 260;
+const drawerWidth = 280;
 
 const AppLayout = () => {
   const theme = useTheme();
@@ -20,16 +20,13 @@ const AppLayout = () => {
       sx={{
         display: "flex",
         minHeight: "100vh",
-        bgcolor: "#e9eeff",
-        background:
-          "radial-gradient(circle at top left, rgba(192,204,255,0.55) 0%, rgba(233,238,255,1) 30%, rgba(248,250,252,1) 100%)",
       }}
     >
       <CssBaseline />
 
       {/* Sidebar */}
       <Box component="nav" sx={{ width: { md: drawerWidth }, flexShrink: { md: 0 } }}>
-        {/* Mobile Drawer */}
+        {/* Mobile */}
         <Drawer
           variant="temporary"
           open={mobileOpen}
@@ -41,13 +38,15 @@ const AppLayout = () => {
               width: drawerWidth,
               border: 0,
               bgcolor: "transparent",
+              boxShadow: "none",
+              p: 1,
             },
           }}
         >
           <Sidebar onItemClick={() => setMobileOpen(false)} />
         </Drawer>
 
-        {/* Desktop Drawer */}
+        {/* Desktop */}
         <Drawer
           variant="permanent"
           sx={{
@@ -56,6 +55,8 @@ const AppLayout = () => {
               width: drawerWidth,
               border: 0,
               bgcolor: "transparent",
+              boxShadow: "none",
+              p: 1.6,
             },
           }}
           open
@@ -65,23 +66,24 @@ const AppLayout = () => {
       </Box>
 
       {/* Main */}
-      <Box sx={{ flexGrow: 1, p: { xs: 1.2, md: 2.2 } }}>
-        {/* Rounded main panel like image */}
+      <Box sx={{ flexGrow: 1, p: { xs: 1.2, md: 1.6 } }}>
         <Box
           sx={{
-            minHeight: "calc(100vh - 24px)",
+            minHeight: "calc(100vh - 20px)",
             borderRadius: 6,
             overflow: "hidden",
-            bgcolor: "rgba(255,255,255,0.40)",
-            border: "1px solid rgba(148,163,184,0.25)",
-            boxShadow: "0 18px 50px rgba(2,6,23,0.12)",
-            backdropFilter: "blur(14px)",
+            bgcolor: "rgba(255,255,255,0.45)",
+            border: "1px solid rgba(226,232,240,0.75)",
+            boxShadow: "0 20px 55px rgba(2,6,23,0.10)",
           }}
         >
           <Topbar onMenuClick={toggleDrawer} />
 
+          {/* ✅ Center Wrapper Added Here */}
           <Box sx={{ p: { xs: 2, md: 3 } }}>
-            <Outlet />
+            <Box sx={{ maxWidth: 1200, mx: "auto" }}>
+              <Outlet />
+            </Box>
           </Box>
         </Box>
       </Box>

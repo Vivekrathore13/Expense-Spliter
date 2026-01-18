@@ -352,6 +352,29 @@ await sendNotification({
     );
 });
 
+export const getSentInvites = asyncHandler(async (req, res) => {
+  const userId = req.user?._id;
+
+  const invites = await Invitation.find({ invitedBy: userId })
+    .populate("groupId", "groupname")
+    .sort({ createdAt: -1 });
+
+  const formatted = invites.map((inv) => ({
+    _id: inv._id,
+    email: inv.email,
+    status: inv.status,
+    createdAt: inv.createdAt,
+    expiresAt: inv.expiresAt,
+    groupId: inv.groupId?._id,
+    groupName: inv.groupId?.groupname || "",
+  }));
+
+  return res.status(200).json(
+    new ApiResponse(200, formatted, "Sent invites fetched successfully ✅")
+  );
+});
+
+
 
 
   

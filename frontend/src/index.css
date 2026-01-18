@@ -1,9 +1,53 @@
-/* remove default browser spacing */
-
+/* ✅ Tailwind import (as you already have) */
 @import "tailwindcss";
 
-html, body {
+/* ✅ Base reset */
+html,
+body {
   margin: 0;
   padding: 0;
-  overflow-x: hidden;   /* ✅ RIGHT SIDE BLACK LINE FIX */
+  overflow-x: hidden; /* right black line fix */
+  height: 100%;
+}
+
+/* ✅ Reference UI vibe */
+body {
+  font-family: "Inter", system-ui, -apple-system, Segoe UI, Roboto, Helvetica,
+    Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+
+  /* background same vibe like figma */
+  background: radial-gradient(
+      circle at 20% 10%,
+      rgba(208, 218, 255, 0.92) 0%,
+      rgba(238, 242, 255, 1) 35%,
+      rgba(248, 250, 252, 1) 100%
+    );
+}
+
+/* ✅ Root full height */
+#root {
+  min-height: 100vh;
+}
+
+/* ✅ Better scrollbar (optional but premium) */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(148, 163, 184, 0.55) transparent;
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.45);
+  border-radius: 999px;
+  border: 2px solid rgba(255, 255, 255, 0.5);
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
 }

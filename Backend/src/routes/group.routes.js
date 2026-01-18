@@ -7,10 +7,10 @@ import {
   deleteGroup,
   deleteMember,
   getGroupById,
-  getMyGroups
+  getMyGroups, 
 } from "../controllers/group.controllers.js";
 
-import { sendInvite, acceptInviteSignup , verifyToken,acceptInviteExisting  } from "../controllers/invite.controllers.js";
+import { sendInvite, acceptInviteSignup , verifyToken,acceptInviteExisting,getSentInvites } from "../controllers/invite.controllers.js";
 import { body,param} from "express-validator";
 
 const router = express.Router();
@@ -102,5 +102,8 @@ router.post(
   body("password", "Password is required").notEmpty(),
   acceptInviteSignup
 );
+
+router.get("/invites/sent", verifyJWT, getSentInvites);
+
 
 export default router;

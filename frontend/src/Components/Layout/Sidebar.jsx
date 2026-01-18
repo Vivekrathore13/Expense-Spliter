@@ -57,21 +57,46 @@ const Sidebar = ({ onItemClick }) => {
     <Box
       sx={{
         height: "100%",
-        px: 1.6,
-        py: 2,
+        borderRadius: 6,
+        p: 2,
+        bgcolor: "rgba(255,255,255,0.40)",
+        border: "1px solid rgba(226,232,240,0.75)",
+        boxShadow: "0 18px 45px rgba(2,6,23,0.10)",
+        background:
+          "linear-gradient(180deg, rgba(239,242,255,0.95) 0%, rgba(238,242,255,0.65) 55%, rgba(241,245,249,0.55) 100%)",
         display: "flex",
         flexDirection: "column",
       }}
     >
       {/* Brand */}
-      <Box sx={{ px: 1.2, pb: 2 }}>
-        <StackBrand />
+      <Box sx={{ px: 1, pb: 1.8 }}>
+        <Box sx={{ display: "flex", gap: 1.1, alignItems: "center" }}>
+          <Box
+            sx={{
+              width: 40,
+              height: 40,
+              borderRadius: 3,
+              bgcolor: "rgba(37,99,235,0.14)",
+              border: "1px solid rgba(37,99,235,0.22)",
+              display: "grid",
+              placeItems: "center",
+              fontWeight: 900,
+              color: "#2563eb",
+            }}
+          >
+            ▮▮
+          </Box>
+
+          <Typography sx={{ fontWeight: 900, fontSize: 18, color: "#0f172a" }}>
+            Expense <span style={{ color: "#2563eb" }}>Splitter</span>
+          </Typography>
+        </Box>
       </Box>
 
-      <Divider sx={{ opacity: 0.5, mb: 1.5 }} />
+      <Divider sx={{ opacity: 0.55, mb: 1.4 }} />
 
       {/* Menu */}
-      <List sx={{ px: 0.6, py: 0.8 }}>
+      <List sx={{ px: 0.6 }}>
         {navItems.map((item) => {
           const active = location.pathname === item.path;
 
@@ -85,24 +110,27 @@ const Sidebar = ({ onItemClick }) => {
                 } else {
                   navigate(item.path);
                 }
-                if (onItemClick) onItemClick();
+                onItemClick?.();
               }}
               sx={{
-                mb: 0.9,
-                borderRadius: 3,
-                px: 1.5,
-                py: 1.15,
+                mb: 1,
+                borderRadius: 4,
+                px: 1.6,
+                py: 1.3,
+                transition: "0.18s",
                 bgcolor: active ? alpha("#2563eb", 0.18) : "transparent",
                 border: active
-                  ? `1px solid ${alpha("#2563eb", 0.25)}`
+                  ? `1px solid ${alpha("#2563eb", 0.20)}`
                   : "1px solid transparent",
-                "&:hover": { bgcolor: alpha("#2563eb", 0.14) },
+                "&:hover": {
+                  bgcolor: active ? alpha("#2563eb", 0.20) : alpha("#0f172a", 0.05),
+                },
               }}
             >
               <ListItemIcon
                 sx={{
-                  color: active ? "#2563eb" : alpha("#0f172a", 0.65),
-                  minWidth: 42,
+                  minWidth: 46,
+                  color: active ? "#2563eb" : alpha("#0f172a", 0.60),
                 }}
               >
                 {item.icon}
@@ -113,7 +141,7 @@ const Sidebar = ({ onItemClick }) => {
                 primaryTypographyProps={{
                   fontWeight: active ? 900 : 800,
                   fontSize: 14,
-                  color: active ? "#1d4ed8" : "#0f172a",
+                  color: active ? "#1d4ed8" : alpha("#0f172a", 0.90),
                 }}
               />
             </ListItemButton>
@@ -125,21 +153,21 @@ const Sidebar = ({ onItemClick }) => {
       <Box sx={{ mt: "auto" }}>
         <Box
           sx={{
-            p: 1.4,
-            borderRadius: 4,
+            p: 1.6,
+            borderRadius: 5,
             bgcolor: "rgba(255,255,255,0.55)",
-            border: "1px solid rgba(148,163,184,0.25)",
-            boxShadow: "0 10px 25px rgba(2,6,23,0.10)",
-            backdropFilter: "blur(12px)",
+            border: "1px solid rgba(226,232,240,0.9)",
+            boxShadow: "0 14px 35px rgba(2,6,23,0.10)",
           }}
         >
           <Box sx={{ display: "flex", gap: 1.2, alignItems: "center" }}>
-            <Avatar sx={{ width: 42, height: 42 }}>{avatarLetter}</Avatar>
+            <Avatar sx={{ width: 44, height: 44 }}>{avatarLetter}</Avatar>
 
             <Box sx={{ flex: 1, overflow: "hidden" }}>
               <Typography sx={{ fontSize: 14, fontWeight: 900, lineHeight: 1.2 }}>
                 {displayName}
               </Typography>
+
               <Typography
                 sx={{
                   fontSize: 12,
@@ -157,13 +185,13 @@ const Sidebar = ({ onItemClick }) => {
           <ListItemButton
             onClick={handleLogout}
             sx={{
-              mt: 1.2,
-              borderRadius: 3,
+              mt: 1.4,
+              borderRadius: 4,
               bgcolor: alpha("#0f172a", 0.05),
               "&:hover": { bgcolor: alpha("#0f172a", 0.08) },
             }}
           >
-            <ListItemIcon sx={{ color: alpha("#0f172a", 0.7), minWidth: 42 }}>
+            <ListItemIcon sx={{ color: alpha("#0f172a", 0.7), minWidth: 46 }}>
               <LogoutIcon />
             </ListItemIcon>
             <ListItemText
@@ -171,7 +199,6 @@ const Sidebar = ({ onItemClick }) => {
               primaryTypographyProps={{
                 fontWeight: 900,
                 fontSize: 14,
-                color: alpha("#0f172a", 0.9),
               }}
             />
           </ListItemButton>
@@ -182,29 +209,3 @@ const Sidebar = ({ onItemClick }) => {
 };
 
 export default Sidebar;
-
-/** ✅ Brand mini component */
-const StackBrand = () => {
-  return (
-    <Box sx={{ display: "flex", gap: 1.1, alignItems: "center" }}>
-      <Box
-        sx={{
-          width: 34,
-          height: 34,
-          borderRadius: 2,
-          bgcolor: "rgba(37,99,235,0.18)",
-          border: "1px solid rgba(37,99,235,0.25)",
-          display: "grid",
-          placeItems: "center",
-          fontWeight: 900,
-          color: "#2563eb",
-        }}
-      >
-        ▮▮▮
-      </Box>
-      <Typography sx={{ fontWeight: 900, fontSize: 18, color: "#0f172a" }}>
-        Expense <span style={{ color: "#2563eb" }}>Splitter</span>
-      </Typography>
-    </Box>
-  );
-};

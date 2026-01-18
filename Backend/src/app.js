@@ -10,6 +10,7 @@ import  settlementrouter  from "./routes/settlement.routes.js"
 import notificationrouter from "./routes/notification.routes.js"
 import summaryRoutes from "./routes/summary.routes.js";
 
+
 app.use(cors(
   {
     origin:process.env.CORS_ORIGIN,
