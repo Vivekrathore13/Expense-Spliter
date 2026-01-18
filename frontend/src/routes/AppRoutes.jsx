@@ -15,6 +15,9 @@ import GroupPage from "../Components/Group/GroupPage";
 
 import SettleUpPage from "../Components/Settle/SettleUpPage";
 
+// ✅ NEW IMPORT
+import SettleHome from "../Components/Settle/SettleHome";
+
 import ComingSoon from "../Components/ComingSoon/ComingSoon";
 
 import PrivateRoute from "./PrivateRoute";
@@ -43,9 +46,12 @@ const AppRoutes = () => {
           </PrivateRoute>
         }
       >
+        {/* ✅ Child routes = WITHOUT "/" */}
         <Route path="dashboard" element={<Dashboard />} />
         <Route path="groups" element={<GroupsPage />} />
         <Route path="group/:groupId" element={<GroupPage />} />
+
+        {/* ✅ JoinGroup should be public (invite link) but if you want it protected then okay */}
         <Route path="join-group" element={<JoinGroup />} />
 
         {/* Optional pages */}
@@ -69,12 +75,13 @@ const AppRoutes = () => {
           }
         />
 
-        {/* ✅ IMPORTANT: settle is group-specific */}
+        {/* ✅ SETTLE ROUTES ✅ */}
+        <Route path="settle" element={<SettleHome />} />
         <Route path="settle-up/:groupId" element={<SettleUpPage />} />
 
         <Route path="settings" element={<Page title="Settings Page" />} />
 
-        {/* ✅ FIXED ✅ */}
+        {/* ✅ Notifications */}
         <Route path="notifications" element={<NotificationsPage />} />
       </Route>
 

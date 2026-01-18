@@ -11,10 +11,22 @@ import {
   Stack,
   Divider,
   Chip,
+  Avatar,
+  IconButton,
 } from "@mui/material";
 import { useLocation, useNavigate } from "react-router-dom";
 import axiosInstance from "../../services/axiosinstance";
 import { toast } from "react-toastify";
+import { alpha } from "@mui/material/styles";
+
+// icons
+import GroupIcon from "@mui/icons-material/Groups";
+import VerifiedIcon from "@mui/icons-material/Verified";
+import CloseIcon from "@mui/icons-material/Close";
+import EmailIcon from "@mui/icons-material/Email";
+import LockIcon from "@mui/icons-material/Lock";
+import PersonIcon from "@mui/icons-material/Person";
+import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 
 const JoinGroup = () => {
   const navigate = useNavigate();
@@ -51,14 +63,22 @@ const JoinGroup = () => {
           return;
         }
 
-        // ✅ backend: GET /group/invite/verify/:token
         const res = await axiosInstance.get(`/group/invite/verify/${token}`);
         setInvite(res.data?.data || res.data);
       } catch (err) {
+        const status = err?.response?.status;
         const msg =
           err?.response?.data?.message ||
           err?.message ||
           "Invite verification failed";
+
+        // ✅ AUTO redirect to login if unauthorized/forbidden
+        if ((status === 401 || status === 403) && !isLoggedIn) {
+          toast.info("Please login to accept this invite ✅");
+          navigate(`/login?token=${token}`);
+          return;
+        }
+
         setError(msg);
       } finally {
         setLoading(false);
@@ -66,7 +86,7 @@ const JoinGroup = () => {
     };
 
     verify();
-  }, [token]);
+  }, [token, isLoggedIn, navigate]);
 
   // ✅ 2) Accept invite (logged-in user)
   const handleAcceptInvite = async () => {
@@ -79,7 +99,17 @@ const JoinGroup = () => {
       });
 
       toast.success(res.data?.message || "Joined group successfully ✅");
-      navigate("/dashboard");
+
+      const gid =
+        res?.data?.data?.groupId ||
+        res?.data?.data?.group?._id ||
+        res?.data?.groupId;
+
+      if (gid) {
+        navigate(`/group/${gid}`);
+      } else {
+        navigate("/dashboard"); // fallback
+      }
     } catch (err) {
       const msg =
         err?.response?.data?.message ||
@@ -115,7 +145,17 @@ const JoinGroup = () => {
       if (accessToken) localStorage.setItem("accessToken", accessToken);
 
       toast.success(res.data?.message || "Signup + Joined successfully ✅");
-      navigate("/dashboard");
+
+      const gid =
+        res?.data?.data?.groupId ||
+        res?.data?.data?.group?._id ||
+        res?.data?.groupId;
+
+      if (gid) {
+        navigate(`/group/${gid}`);
+      } else {
+        navigate("/dashboard"); // fallback
+      }
     } catch (err) {
       const msg =
         err?.response?.data?.message ||
@@ -126,6 +166,10 @@ const JoinGroup = () => {
       setAcceptLoading(false);
     }
   };
+
+  // UI helpers
+  const groupName = invite?.group?.name || invite?.groupName || "Group";
+  const invitedEmail = invite?.email || "—";
 
   // ✅ Loading UI
   if (loading) {
@@ -142,18 +186,28 @@ const JoinGroup = () => {
         <Card
           sx={{
             width: "100%",
-            maxWidth: 520,
-            borderRadius: 5,
-            boxShadow: 8,
-            bgcolor: "rgba(255,255,255,0.75)",
-            backdropFilter: "blur(10px)",
+            maxWidth: 560,
+            borderRadius: 6,
+            overflow: "hidden",
+            bgcolor: "rgba(255,255,255,0.70)",
+            backdropFilter: "blur(12px)",
+            border: "1px solid rgba(226,232,240,0.95)",
+            boxShadow: "0 30px 90px rgba(2,6,23,0.18)",
           }}
         >
+          <Box
+            sx={{
+              height: 4,
+              background: "linear-gradient(90deg, #2563eb, #6366f1)",
+            }}
+          />
           <CardContent sx={{ p: 4 }}>
-            <Stack alignItems="center" spacing={2}>
+            <Stack alignItems="center" spacing={2.2}>
               <CircularProgress />
-              <Typography fontWeight={900}>Verifying invite link...</Typography>
-              <Typography variant="body2" color="text.secondary">
+              <Typography fontWeight={950} sx={{ fontSize: 18 }}>
+                Verifying invite link...
+              </Typography>
+              <Typography variant="body2" sx={{ color: "text.secondary" }}>
                 Please wait a moment ✅
               </Typography>
             </Stack>
@@ -175,24 +229,58 @@ const JoinGroup = () => {
           background: "linear-gradient(120deg, #f8fafc 0%, #eef2ff 100%)",
         }}
       >
-        <Card sx={{ width: "100%", maxWidth: 520, borderRadius: 5, boxShadow: 8 }}>
+        <Card
+          sx={{
+            width: "100%",
+            maxWidth: 560,
+            borderRadius: 6,
+            overflow: "hidden",
+            border: "1px solid rgba(226,232,240,0.95)",
+            boxShadow: "0 30px 90px rgba(2,6,23,0.18)",
+          }}
+        >
+          <Box
+            sx={{
+              height: 4,
+              background: "linear-gradient(90deg, #e11d48, #fb7185)",
+            }}
+          />
           <CardContent sx={{ p: 4 }}>
-            <Typography variant="h5" fontWeight={900} gutterBottom>
-              Invite Error ❌
-            </Typography>
+            <Stack
+              direction="row"
+              justifyContent="space-between"
+              alignItems="center"
+            >
+              <Typography variant="h5" fontWeight={950}>
+                Invite Error ❌
+              </Typography>
 
-            <Alert severity="error" sx={{ mb: 2 }}>
+              <IconButton onClick={() => navigate("/")}>
+                <CloseIcon />
+              </IconButton>
+            </Stack>
+
+            <Alert severity="error" sx={{ mt: 2, mb: 2 }}>
               {error}
             </Alert>
 
-            <Stack direction="row" spacing={1.2}>
-              <Button variant="contained" fullWidth onClick={() => navigate("/")}>
-                Go Home
-              </Button>
+            <Stack direction={{ xs: "column", sm: "row" }} spacing={1.2}>
               <Button
                 variant="outlined"
                 fullWidth
-                onClick={() => navigate(`/login${token ? `?token=${token}` : ""}`)}
+                startIcon={<ArrowBackIcon />}
+                onClick={() => navigate("/")}
+                sx={{ borderRadius: 3, fontWeight: 900, py: 1 }}
+              >
+                Go Home
+              </Button>
+              <Button
+                variant="contained"
+                fullWidth
+                onClick={() =>
+                  navigate(`/login${token ? `?token=${token}` : ""}`)
+                }
+                sx={{ borderRadius: 3, fontWeight: 900, py: 1 }}
               >
                 Login
               </Button>
@@ -216,72 +304,154 @@ const JoinGroup = () => {
         background: "linear-gradient(120deg, #f8fafc 0%, #eef2ff 100%)",
       }}
     >
-      {/* background blobs */}
+      {/* Background glow blobs */}
       <Box
         sx={{
           position: "absolute",
-          width: 260,
-          height: 260,
-          bgcolor: "rgba(99,102,241,0.15)",
-          filter: "blur(40px)",
+          width: 300,
+          height: 300,
+          bgcolor: "rgba(99,102,241,0.18)",
+          filter: "blur(55px)",
           borderRadius: "50%",
-          top: -80,
-          left: -60,
+          top: -90,
+          left: -70,
         }}
       />
       <Box
         sx={{
           position: "absolute",
-          width: 280,
-          height: 280,
-          bgcolor: "rgba(37,99,235,0.15)",
-          filter: "blur(45px)",
+          width: 340,
+          height: 340,
+          bgcolor: "rgba(37,99,235,0.16)",
+          filter: "blur(60px)",
           borderRadius: "50%",
-          bottom: -90,
-          right: -80,
+          bottom: -110,
+          right: -90,
         }}
       />
 
       <Card
         sx={{
           width: "100%",
-          maxWidth: 620,
-          borderRadius: 6,
-          boxShadow: 12,
-          bgcolor: "rgba(255,255,255,0.78)",
-          backdropFilter: "blur(12px)",
-          border: "1px solid rgba(255,255,255,0.7)",
+          maxWidth: 720,
+          borderRadius: 7,
+          overflow: "hidden",
+          bgcolor: "rgba(255,255,255,0.76)",
+          backdropFilter: "blur(14px)",
+          border: "1px solid rgba(226,232,240,0.95)",
+          boxShadow: "0 34px 110px rgba(2,6,23,0.20)",
           position: "relative",
           zIndex: 2,
         }}
       >
-        <CardContent sx={{ p: 4 }}>
-          <Stack direction="row" justifyContent="space-between" alignItems="center" mb={1}>
-            <Typography variant="h5" fontWeight={950}>
-              You’re Invited 🎉
-            </Typography>
+        {/* top gradient bar */}
+        <Box
+          sx={{
+            height: 4,
+            background: "linear-gradient(90deg, #2563eb, #6366f1)",
+          }}
+        />
+
+        <CardContent sx={{ p: { xs: 3, md: 4 } }}>
+          {/* header */}
+          <Stack
+            direction="row"
+            justifyContent="space-between"
+            alignItems="center"
+            mb={1.2}
+          >
+            <Stack spacing={0.4}>
+              <Stack direction="row" spacing={1} alignItems="center">
+                <VerifiedIcon sx={{ color: "#16a34a" }} />
+                <Typography variant="h5" fontWeight={950}>
+                  You’re Invited 🎉
+                </Typography>
+              </Stack>
+
+              <Typography sx={{ color: "text.secondary", fontWeight: 700 }}>
+                Join the group using this invite. It takes just a few seconds.
+              </Typography>
+            </Stack>
 
             <Chip
               label="Invite Valid ✅"
               color="success"
               variant="outlined"
-              sx={{ fontWeight: 800 }}
+              sx={{ fontWeight: 900, borderRadius: 999 }}
             />
           </Stack>
 
-          <Typography sx={{ mb: 2, color: "text.secondary" }}>
-            Join the group using this invite. It takes just a few seconds.
-          </Typography>
+          <Divider sx={{ my: 2 }} />
 
-          <Box sx={{ p: 2, bgcolor: "#f7f7ff", borderRadius: 4, mb: 2 }}>
-            <Typography fontWeight={900} sx={{ fontSize: 16 }}>
-              Group: {invite?.group?.name || invite?.groupName || "—"}
-            </Typography>
-            <Typography color="text.secondary" sx={{ mt: 0.6 }}>
-              Invited Email: <b>{invite?.email || "—"}</b>
-            </Typography>
+          {/* group card */}
+          <Box
+            sx={{
+              p: 2.2,
+              borderRadius: 5,
+              border: "1px solid rgba(226,232,240,0.95)",
+              bgcolor: "rgba(238,242,255,0.62)",
+              position: "relative",
+              overflow: "hidden",
+            }}
+          >
+            <Box
+              sx={{
+                position: "absolute",
+                inset: 0,
+                background:
+                  "radial-gradient(circle at top right, rgba(37,99,235,0.18), transparent 55%)",
+                pointerEvents: "none",
+              }}
+            />
+
+            <Stack
+              direction="row"
+              spacing={1.6}
+              alignItems="center"
+              sx={{ position: "relative" }}
+            >
+              <Avatar
+                sx={{
+                  width: 54,
+                  height: 54,
+                  bgcolor: alpha("#2563eb", 0.16),
+                  color: "#2563eb",
+                  fontWeight: 900,
+                }}
+              >
+                <GroupIcon />
+              </Avatar>
+
+              <Box sx={{ flex: 1, minWidth: 0 }}>
+                <Typography sx={{ fontWeight: 950, fontSize: 18 }} noWrap>
+                  {groupName}
+                </Typography>
+
+                <Stack
+                  direction="row"
+                  spacing={1}
+                  alignItems="center"
+                  sx={{ mt: 0.6 }}
+                >
+                  <EmailIcon sx={{ fontSize: 16, opacity: 0.7 }} />
+                  <Typography
+                    sx={{
+                      color: "text.secondary",
+                      fontWeight: 800,
+                      fontSize: 13,
+                    }}
+                    noWrap
+                  >
+                    Invited Email: <b>{invitedEmail}</b>
+                  </Typography>
+                </Stack>
+              </Box>
+            </Stack>
           </Box>
 
+          <Divider sx={{ my: 2.4 }} />
+
+          {/* already member */}
           {invite?.alreadyMember ? (
             <>
               <Alert severity="info" sx={{ mb: 2 }}>
@@ -292,7 +462,7 @@ const JoinGroup = () => {
                 variant="contained"
                 fullWidth
                 onClick={() => navigate("/dashboard")}
-                sx={{ py: 1.2, fontWeight: 900, borderRadius: 3 }}
+                sx={{ py: 1.2, fontWeight: 950, borderRadius: 3.4 }}
               >
                 Go to Dashboard
               </Button>
@@ -310,7 +480,7 @@ const JoinGroup = () => {
                     fullWidth
                     onClick={handleAcceptInvite}
                     disabled={acceptLoading}
-                    sx={{ py: 1.25, fontWeight: 900, borderRadius: 3 }}
+                    sx={{ py: 1.25, fontWeight: 950, borderRadius: 3.4 }}
                   >
                     {acceptLoading ? (
                       <>
@@ -320,6 +490,15 @@ const JoinGroup = () => {
                       "Accept Invite & Join Group"
                     )}
                   </Button>
+
+                  <Button
+                    variant="text"
+                    fullWidth
+                    onClick={() => navigate("/dashboard")}
+                    sx={{ mt: 1.2, fontWeight: 900 }}
+                  >
+                    Go back to Dashboard
+                  </Button>
                 </>
               ) : (
                 <>
@@ -327,71 +506,135 @@ const JoinGroup = () => {
                     You are not logged in. Create an account to join this group.
                   </Alert>
 
-                  <Divider sx={{ my: 2 }} />
+                  {/* signup card */}
+                  <Box
+                    sx={{
+                      p: 2.2,
+                      borderRadius: 5,
+                      border: "1px solid rgba(226,232,240,0.95)",
+                      bgcolor: "rgba(255,255,255,0.60)",
+                    }}
+                  >
+                    <Stack spacing={2}>
+                      <TextField
+                        label="Full Name"
+                        value={form.fullName}
+                        onChange={(e) =>
+                          setForm({ ...form, fullName: e.target.value })
+                        }
+                        fullWidth
+                        InputProps={{
+                          startAdornment: (
+                            <Box
+                              sx={{
+                                display: "flex",
+                                alignItems: "center",
+                                mr: 1,
+                                opacity: 0.7,
+                              }}
+                            >
+                              <PersonIcon fontSize="small" />
+                            </Box>
+                          ),
+                        }}
+                      />
 
-                  <Stack spacing={2}>
-                    <TextField
-                      label="Full Name"
-                      value={form.fullName}
-                      onChange={(e) =>
-                        setForm({ ...form, fullName: e.target.value })
-                      }
-                      fullWidth
-                    />
+                      <TextField
+                        label="Email"
+                        value={invite?.email || ""}
+                        fullWidth
+                        disabled
+                        InputProps={{
+                          startAdornment: (
+                            <Box
+                              sx={{
+                                display: "flex",
+                                alignItems: "center",
+                                mr: 1,
+                                opacity: 0.7,
+                              }}
+                            >
+                              <EmailIcon fontSize="small" />
+                            </Box>
+                          ),
+                        }}
+                      />
 
-                    <TextField
-                      label="Email"
-                      value={invite?.email || ""}
-                      fullWidth
-                      disabled
-                    />
+                      <TextField
+                        label="Password"
+                        type="password"
+                        value={form.password}
+                        onChange={(e) =>
+                          setForm({ ...form, password: e.target.value })
+                        }
+                        fullWidth
+                        InputProps={{
+                          startAdornment: (
+                            <Box
+                              sx={{
+                                display: "flex",
+                                alignItems: "center",
+                                mr: 1,
+                                opacity: 0.7,
+                              }}
+                            >
+                              <LockIcon fontSize="small" />
+                            </Box>
+                          ),
+                        }}
+                      />
 
-                    <TextField
-                      label="Password"
-                      type="password"
-                      value={form.password}
-                      onChange={(e) =>
-                        setForm({ ...form, password: e.target.value })
-                      }
-                      fullWidth
-                    />
+                      <TextField
+                        label="Confirm Password"
+                        type="password"
+                        value={form.confirmPassword}
+                        onChange={(e) =>
+                          setForm({ ...form, confirmPassword: e.target.value })
+                        }
+                        fullWidth
+                        InputProps={{
+                          startAdornment: (
+                            <Box
+                              sx={{
+                                display: "flex",
+                                alignItems: "center",
+                                mr: 1,
+                                opacity: 0.7,
+                              }}
+                            >
+                              <LockIcon fontSize="small" />
+                            </Box>
+                          ),
+                        }}
+                      />
 
-                    <TextField
-                      label="Confirm Password"
-                      type="password"
-                      value={form.confirmPassword}
-                      onChange={(e) =>
-                        setForm({ ...form, confirmPassword: e.target.value })
-                      }
-                      fullWidth
-                    />
+                      <Button
+                        variant="contained"
+                        fullWidth
+                        onClick={handleSignupAndJoin}
+                        disabled={acceptLoading}
+                        sx={{ py: 1.2, fontWeight: 950, borderRadius: 3.4 }}
+                      >
+                        {acceptLoading ? (
+                          <>
+                            <CircularProgress size={20} sx={{ mr: 1 }} />
+                            Creating account...
+                          </>
+                        ) : (
+                          "Signup & Join Group"
+                        )}
+                      </Button>
 
-                    <Button
-                      variant="contained"
-                      fullWidth
-                      onClick={handleSignupAndJoin}
-                      disabled={acceptLoading}
-                      sx={{ py: 1.2, fontWeight: 950, borderRadius: 3 }}
-                    >
-                      {acceptLoading ? (
-                        <>
-                          <CircularProgress size={20} sx={{ mr: 1 }} /> Creating
-                          account...
-                        </>
-                      ) : (
-                        "Signup & Join Group"
-                      )}
-                    </Button>
-
-                    <Button
-                      variant="text"
-                      fullWidth
-                      onClick={() => navigate(`/login?token=${token}`)}
-                      sx={{ fontWeight: 800 }}
-                    >
-                      Already have an account? Login
-                    </Button>
-                  </Stack>
+                      <Button
+                        variant="outlined"
+                        fullWidth
+                        onClick={() => navigate(`/login?token=${token}`)}
+                        sx={{ fontWeight: 900, borderRadius: 3.4, py: 1 }}
+                      >
+                        Already have an account? Login
+                      </Button>
+                    </Stack>
+                  </Box>
                 </>
               )}
             </>

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Dialog,
   DialogTitle,
@@ -10,10 +10,13 @@ import {
   Typography,
   IconButton,
   Box,
+  CircularProgress,
+  Divider,
 } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
 import GroupAddIcon from "@mui/icons-material/GroupAdd";
 import { alpha } from "@mui/material/styles";
+import { toast } from "react-toastify";
 
 import { createGroupAPI } from "../../services/groupApi";
 
@@ -22,9 +25,25 @@ const CreateGroupModal = ({ open, onClose, onCreated }) => {
   const [loading, setLoading] = useState(false);
   const [errMsg, setErrMsg] = useState("");
 
+  // reset when opened/closed
+  useEffect(() => {
+    if (!open) {
+      setGroupname("");
+      setErrMsg("");
+      setLoading(false);
+    }
+  }, [open]);
+
   const handleCreate = async () => {
-    if (!groupname.trim()) {
+    const name = groupname.trim();
+
+    if (!name) {
       setErrMsg("Group name is required");
+      return;
+    }
+
+    if (name.length < 3) {
+      setErrMsg("Group name must be at least 3 characters");
       return;
     }
 
@@ -32,11 +51,13 @@ const CreateGroupModal = ({ open, onClose, onCreated }) => {
       setErrMsg("");
       setLoading(true);
 
-      await createGroupAPI({ groupname: groupname.trim() });
+      const res = await createGroupAPI({ groupname: name });
+      const createdGroup = res?.data?.data || res?.data; // ✅ group object
 
+      toast.success("Group created ✅");
       setGroupname("");
       onClose?.();
-      onCreated?.();
+      onCreated?.(createdGroup); // ✅ pass created group back
     } catch (err) {
       const msg =
         err?.response?.data?.message ||
@@ -48,31 +69,54 @@ const CreateGroupModal = ({ open, onClose, onCreated }) => {
     }
   };
 
+  const handleDialogClose = () => {
+    if (loading) return;
+    onClose?.();
+  };
+
   return (
     <Dialog
       open={open}
-      onClose={() => !loading && onClose?.()}
+      onClose={handleDialogClose}
       maxWidth="xs"
       fullWidth
       PaperProps={{
         sx: {
           borderRadius: 5,
           overflow: "hidden",
-          bgcolor: "rgba(255,255,255,0.95)",
+          bgcolor: "rgba(255,255,255,0.92)",
           border: "1px solid rgba(226,232,240,0.95)",
-          boxShadow: "0 24px 70px rgba(2,6,23,0.18)",
+          boxShadow: "0 26px 80px rgba(2,6,23,0.20)",
+          backdropFilter: "blur(14px)",
+          position: "relative",
         },
       }}
     >
+      {/* top gradient bar */}
+      <Box
+        sx={{
+          position: "absolute",
+          top: 0,
+          left: 0,
+          right: 0,
+          height: 4,
+          background: "linear-gradient(90deg, #2563eb, #6366f1)",
+        }}
+      />
+
       <DialogTitle sx={{ pb: 1.2 }}>
-        <Stack direction="row" alignItems="center" justifyContent="space-between">
+        <Stack
+          direction="row"
+          alignItems="center"
+          justifyContent="space-between"
+        >
           <Stack direction="row" spacing={1.2} alignItems="center">
             <Box
               sx={{
-                width: 40,
-                height: 40,
+                width: 42,
+                height: 42,
                 borderRadius: 4,
-                bgcolor: alpha("#2563eb", 0.10),
+                bgcolor: alpha("#2563eb", 0.1),
                 border: `1px solid ${alpha("#2563eb", 0.18)}`,
                 display: "grid",
                 placeItems: "center",
@@ -86,37 +130,47 @@ const CreateGroupModal = ({ open, onClose, onCreated }) => {
                 Create Group
               </Typography>
               <Typography sx={{ opacity: 0.65, fontSize: 12 }}>
-                Create a group to start splitting.
+                Create a group to start splitting expenses.
               </Typography>
             </Box>
           </Stack>
 
-          <IconButton onClick={onClose} disabled={loading}>
+          <IconButton onClick={handleDialogClose} disabled={loading}>
             <CloseIcon />
           </IconButton>
         </Stack>
       </DialogTitle>
 
-      <DialogContent sx={{ pt: 0.8 }}>
-        <TextField
-          autoFocus
-          fullWidth
-          label="Group Name"
-          value={groupname}
-          onChange={(e) => setGroupname(e.target.value)}
-          placeholder="e.g., Goa Trip, Flatmates..."
-          error={!!errMsg}
-          helperText={errMsg || " "}
-          sx={{
-            "& .MuiOutlinedInput-root": { borderRadius: 4 },
-          }}
-        />
+      <Divider />
+
+      <DialogContent sx={{ pt: 2 }}>
+        <Stack spacing={1.2}>
+          <TextField
+            autoFocus
+            fullWidth
+            label="Group Name"
+            value={groupname}
+            onChange={(e) => {
+              setGroupname(e.target.value);
+              if (errMsg) setErrMsg("");
+            }}
+            placeholder="e.g., Goa Trip, Flatmates..."
+            error={!!errMsg}
+            helperText={errMsg || "Tip: Use a short name you’ll remember."}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") handleCreate();
+            }}
+            sx={{
+              "& .MuiOutlinedInput-root": { borderRadius: 4 },
+            }}
+          />
+        </Stack>
       </DialogContent>
 
       <DialogActions sx={{ px: 3, pb: 2.4 }}>
         <Button
           variant="outlined"
-          onClick={onClose}
+          onClick={handleDialogClose}
           disabled={loading}
           sx={{
             borderRadius: 999,
@@ -147,7 +201,14 @@ const CreateGroupModal = ({ open, onClose, onCreated }) => {
             "&:hover": { bgcolor: "#1d4ed8" },
           }}
         >
-          {loading ? "Creating..." : "Create"}
+          {loading ? (
+            <>
+              <CircularProgress size={18} sx={{ mr: 1 }} />
+              Creating...
+            </>
+          ) : (
+            "Create"
+          )}
         </Button>
       </DialogActions>
     </Dialog>

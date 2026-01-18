@@ -22,7 +22,7 @@ import MailOutlineIcon from "@mui/icons-material/MailOutline";
 import { alpha } from "@mui/material/styles";
 
 import { getMyGroupsAPI } from "../../services/groupApi";
-import CreateGroupModal from "./CreateGroupModal";
+import CreateGroupModal from "../Dashboard/CreateGroupModal";
 import InviteModal from "./InviteModal";
 import axiosInstance from "../../services/axiosinstance";
 
@@ -97,7 +97,11 @@ const Dashboard = () => {
   };
 
   const loadDashboard = async () => {
-    await Promise.all([loadGroups(), fetchDashboardSummary(), fetchSentInvites()]);
+    await Promise.all([
+      loadGroups(),
+      fetchDashboardSummary(),
+      fetchSentInvites(),
+    ]);
   };
 
   useEffect(() => {
@@ -149,7 +153,9 @@ const Dashboard = () => {
           </Avatar>
 
           <Box>
-            <Typography sx={{ fontWeight: 900, fontSize: 14, color: COLORS.muted }}>
+            <Typography
+              sx={{ fontWeight: 900, fontSize: 14, color: COLORS.muted }}
+            >
               {label}
             </Typography>
 
@@ -253,8 +259,14 @@ const Dashboard = () => {
         <Grid item xs={12} md={5}>
           <SoftCard sx={{ height: "100%" }}>
             <CardContent sx={{ p: { xs: 2, md: 2.4 } }}>
-              <Stack direction="row" justifyContent="space-between" alignItems="center">
-                <Typography sx={{ fontWeight: 900, fontSize: 18, color: COLORS.heading }}>
+              <Stack
+                direction="row"
+                justifyContent="space-between"
+                alignItems="center"
+              >
+                <Typography
+                  sx={{ fontWeight: 900, fontSize: 18, color: COLORS.heading }}
+                >
                   Your Groups
                 </Typography>
 
@@ -344,7 +356,13 @@ const Dashboard = () => {
                           >
                             {g.groupname}
                           </Typography>
-                          <Typography sx={{ fontSize: 13, color: COLORS.muted, fontWeight: 800 }}>
+                          <Typography
+                            sx={{
+                              fontSize: 13,
+                              color: COLORS.muted,
+                              fontWeight: 800,
+                            }}
+                          >
                             {g.member?.length ?? 0} members
                           </Typography>
                         </Box>
@@ -353,12 +371,12 @@ const Dashboard = () => {
                         <Typography
                           sx={{
                             fontWeight: 900,
-                            color: idx % 2 === 0 ? "#16a34a" : "#e11d48",
+                            color: "#16a34a",
                             minWidth: 70,
                             textAlign: "right",
                           }}
                         >
-                          ₹{formatINR(idx % 2 === 0 ? 300 : 1200)}
+                          ₹{formatINR(g?.totalExpense || 0)}
                         </Typography>
 
                         <ChevronRightIcon sx={{ opacity: 0.35 }} />
@@ -381,7 +399,9 @@ const Dashboard = () => {
             {/* ✅ Recent Activity */}
             <SoftCard>
               <CardContent sx={{ p: { xs: 2, md: 2.4 } }}>
-                <Typography sx={{ fontWeight: 900, fontSize: 18, color: COLORS.heading }}>
+                <Typography
+                  sx={{ fontWeight: 900, fontSize: 18, color: COLORS.heading }}
+                >
                   Recent Activity
                 </Typography>
 
@@ -398,7 +418,11 @@ const Dashboard = () => {
                           border: "1px solid rgba(226,232,240,0.9)",
                         }}
                       >
-                        <Stack direction="row" spacing={1.4} alignItems="center">
+                        <Stack
+                          direction="row"
+                          spacing={1.4}
+                          alignItems="center"
+                        >
                           <Skeleton variant="circular" width={44} height={44} />
                           <Box sx={{ flex: 1 }}>
                             <Skeleton width="70%" height={18} />
@@ -425,7 +449,11 @@ const Dashboard = () => {
                           bgcolor: "rgba(255,255,255,0.60)",
                         }}
                       >
-                        <Stack direction="row" spacing={1.3} alignItems="center">
+                        <Stack
+                          direction="row"
+                          spacing={1.3}
+                          alignItems="center"
+                        >
                           <Avatar
                             sx={{
                               width: 44,
@@ -450,12 +478,20 @@ const Dashboard = () => {
                               {s.fromName} settled with {s.toName}
                             </Typography>
 
-                            <Typography sx={{ fontSize: 13, color: COLORS.muted, fontWeight: 800 }}>
+                            <Typography
+                              sx={{
+                                fontSize: 13,
+                                color: COLORS.muted,
+                                fontWeight: 800,
+                              }}
+                            >
                               {s.groupName}
                             </Typography>
                           </Box>
 
-                          <Typography sx={{ fontWeight: 900, color: "#2563eb" }}>
+                          <Typography
+                            sx={{ fontWeight: 900, color: "#2563eb" }}
+                          >
                             ₹{formatINR(s.amount)}
                           </Typography>
                         </Stack>
@@ -476,10 +512,18 @@ const Dashboard = () => {
                   gap={1.2}
                 >
                   <Box>
-                    <Typography sx={{ fontWeight: 900, fontSize: 18, color: COLORS.heading }}>
+                    <Typography
+                      sx={{
+                        fontWeight: 900,
+                        fontSize: 18,
+                        color: COLORS.heading,
+                      }}
+                    >
                       Invitations
                     </Typography>
-                    <Typography sx={{ fontSize: 13, color: COLORS.text, fontWeight: 800 }}>
+                    <Typography
+                      sx={{ fontSize: 13, color: COLORS.text, fontWeight: 800 }}
+                    >
                       Manage invited members (email + group + status)
                     </Typography>
                   </Box>
@@ -515,7 +559,11 @@ const Dashboard = () => {
                           border: "1px solid rgba(226,232,240,0.9)",
                         }}
                       >
-                        <Stack direction="row" spacing={1.2} alignItems="center">
+                        <Stack
+                          direction="row"
+                          spacing={1.2}
+                          alignItems="center"
+                        >
                           <Skeleton variant="circular" width={44} height={44} />
                           <Box sx={{ flex: 1 }}>
                             <Skeleton width="45%" height={18} />
@@ -527,7 +575,9 @@ const Dashboard = () => {
                     ))}
                   </Stack>
                 ) : invites.length === 0 ? (
-                  <Typography sx={{ opacity: 0.78, py: 1.2, color: COLORS.text }}>
+                  <Typography
+                    sx={{ opacity: 0.78, py: 1.2, color: COLORS.text }}
+                  >
                     No invites sent yet. Invite members to join your groups ✅
                   </Typography>
                 ) : (
@@ -570,7 +620,13 @@ const Dashboard = () => {
                             {inv.email}
                           </Typography>
 
-                          <Typography sx={{ fontSize: 13, color: COLORS.muted, fontWeight: 800 }}>
+                          <Typography
+                            sx={{
+                              fontSize: 13,
+                              color: COLORS.muted,
+                              fontWeight: 800,
+                            }}
+                          >
                             Group: {inv.groupName || "—"}
                           </Typography>
                         </Box>

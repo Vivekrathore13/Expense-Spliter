@@ -27,7 +27,7 @@ const navItems = [
   { label: "Dashboard", path: "/dashboard", icon: <DashboardIcon /> },
   { label: "My Groups", path: "/groups", icon: <GroupsIcon /> },
   { label: "Expenses", path: "/expenses", icon: <ReceiptLongIcon /> },
-  { label: "Settle Up", path: "/groups", icon: <CompareArrowsIcon /> },
+  { label: "Settle Up", path: "/settle", icon: <CompareArrowsIcon /> },
   { label: "Settings", path: "/settings", icon: <SettingsIcon /> },
 ];
 
@@ -98,7 +98,10 @@ const Sidebar = ({ onItemClick }) => {
       {/* Menu */}
       <List sx={{ px: 0.6 }}>
         {navItems.map((item) => {
-          const active = location.pathname === item.path;
+          const active =
+            item.label === "Settle Up"
+              ? location.pathname.startsWith("/settle")
+              : location.pathname === item.path;
 
           return (
             <ListItemButton
@@ -106,7 +109,7 @@ const Sidebar = ({ onItemClick }) => {
               onClick={() => {
                 if (item.label === "Settle Up") {
                   toast.info("Select a group to settle up ✅");
-                  navigate("/groups");
+                  navigate("/settle");
                 } else {
                   navigate(item.path);
                 }
@@ -120,17 +123,19 @@ const Sidebar = ({ onItemClick }) => {
                 transition: "0.18s",
                 bgcolor: active ? alpha("#2563eb", 0.18) : "transparent",
                 border: active
-                  ? `1px solid ${alpha("#2563eb", 0.20)}`
+                  ? `1px solid ${alpha("#2563eb", 0.2)}`
                   : "1px solid transparent",
                 "&:hover": {
-                  bgcolor: active ? alpha("#2563eb", 0.20) : alpha("#0f172a", 0.05),
+                  bgcolor: active
+                    ? alpha("#2563eb", 0.2)
+                    : alpha("#0f172a", 0.05),
                 },
               }}
             >
               <ListItemIcon
                 sx={{
                   minWidth: 46,
-                  color: active ? "#2563eb" : alpha("#0f172a", 0.60),
+                  color: active ? "#2563eb" : alpha("#0f172a", 0.6),
                 }}
               >
                 {item.icon}
@@ -141,7 +146,7 @@ const Sidebar = ({ onItemClick }) => {
                 primaryTypographyProps={{
                   fontWeight: active ? 900 : 800,
                   fontSize: 14,
-                  color: active ? "#1d4ed8" : alpha("#0f172a", 0.90),
+                  color: active ? "#1d4ed8" : alpha("#0f172a", 0.9),
                 }}
               />
             </ListItemButton>
@@ -164,7 +169,9 @@ const Sidebar = ({ onItemClick }) => {
             <Avatar sx={{ width: 44, height: 44 }}>{avatarLetter}</Avatar>
 
             <Box sx={{ flex: 1, overflow: "hidden" }}>
-              <Typography sx={{ fontSize: 14, fontWeight: 900, lineHeight: 1.2 }}>
+              <Typography
+                sx={{ fontSize: 14, fontWeight: 900, lineHeight: 1.2 }}
+              >
                 {displayName}
               </Typography>
 

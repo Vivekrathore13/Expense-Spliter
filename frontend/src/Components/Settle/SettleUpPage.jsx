@@ -10,16 +10,45 @@ import {
   Button,
   Avatar,
   CircularProgress,
+  Skeleton,
+  Tooltip,
 } from "@mui/material";
 import { ArrowForward } from "@mui/icons-material";
 import { useNavigate, useParams } from "react-router-dom";
 import axiosInstance from "../../services/axiosinstance";
 import { toast } from "react-toastify";
+import { alpha } from "@mui/material/styles";
+
+// icons
+import HandshakeIcon from "@mui/icons-material/Handshake";
+import AccountBalanceWalletIcon from "@mui/icons-material/AccountBalanceWallet";
+import HistoryIcon from "@mui/icons-material/History";
+import GroupsIcon from "@mui/icons-material/Groups";
+import ArrowBackIcon from "@mui/icons-material/ArrowBack";
+import CheckCircleIcon from "@mui/icons-material/CheckCircle";
+import LightbulbIcon from "@mui/icons-material/Lightbulb";
+import SavingsIcon from "@mui/icons-material/Savings";
 
 const formatINR = (num) =>
   new Intl.NumberFormat("en-IN", { maximumFractionDigits: 0 }).format(
     Number(num || 0)
   );
+
+// ✅ Common SoftCard like Dashboard
+const SoftCard = ({ children, sx }) => (
+  <Card
+    sx={{
+      borderRadius: 5,
+      bgcolor: "rgba(255,255,255,0.85)",
+      border: "1px solid rgba(226,232,240,0.95)",
+      boxShadow: "0 18px 60px rgba(2,6,23,0.08)",
+      overflow: "hidden",
+      ...sx,
+    }}
+  >
+    {children}
+  </Card>
+);
 
 const SettleUpPage = () => {
   const { groupId } = useParams();
@@ -31,14 +60,12 @@ const SettleUpPage = () => {
   const [history, setHistory] = useState([]);
   const [groupSummary, setGroupSummary] = useState(null);
 
-  const [settlingKey, setSettlingKey] = useState(null); // ✅ loader for "Mark Settled"
+  const [settlingKey, setSettlingKey] = useState(null);
 
-  // ✅ Build userId -> name map from balances (for suggestions names)
+  // ✅ userId -> name
   const userMap = useMemo(() => {
     const map = new Map();
-    (balances || []).forEach((b) => {
-      map.set(String(b.userId), b.fullName);
-    });
+    (balances || []).forEach((b) => map.set(String(b.userId), b.fullName));
     return map;
   }, [balances]);
 
@@ -52,22 +79,12 @@ const SettleUpPage = () => {
         axiosInstance.get(`/groups/${groupId}/balance`),
         axiosInstance.get(`/groups/${groupId}/settlements/suggestions`),
         axiosInstance.get(`/groups/${groupId}/settlements/logs`),
-        axiosInstance.get(`/groups/${groupId}/summary`).catch(() => null), // ✅ keep optional
+        axiosInstance.get(`/groups/${groupId}/summary`).catch(() => null),
       ]);
 
-      // ✅ balances
-      const balancesArr = bRes?.data?.data?.balances || [];
-      setBalances(balancesArr);
-
-      // ✅ suggestions
-      const suggestionsArr = sRes?.data?.data?.settlements || [];
-      setSuggestions(suggestionsArr);
-
-      // ✅ logs
-      const logsArr = hRes?.data?.data?.logs || [];
-      setHistory(logsArr);
-
-      // ✅ group summary
+      setBalances(bRes?.data?.data?.balances || []);
+      setSuggestions(sRes?.data?.data?.settlements || []);
+      setHistory(hRes?.data?.data?.logs || []);
       setGroupSummary(sumRes?.data?.data || null);
     } catch (err) {
       console.log(err);
@@ -103,186 +120,302 @@ const SettleUpPage = () => {
     }
   };
 
+  // ✅ helpful computed
+  const youNet = groupSummary?.you?.net || 0;
+
+  const netChip = useMemo(() => {
+    if (youNet > 0)
+      return { label: `You get back ₹${formatINR(youNet)}`, color: "#16a34a" };
+    if (youNet < 0)
+      return {
+        label: `You owe ₹${formatINR(Math.abs(youNet))}`,
+        color: "#e11d48",
+      };
+    return { label: "You are settled ✅", color: "#2563eb" };
+  }, [youNet]);
+
+  // ✅ Loading UI (premium skeleton)
   if (loading) {
     return (
-      <Box sx={{ p: 3, display: "flex", justifyContent: "center" }}>
-        <CircularProgress />
+      <Box sx={{ p: 2 }}>
+        <SoftCard sx={{ mb: 2.4 }}>
+          <CardContent sx={{ p: 3 }}>
+            <Stack spacing={1}>
+              <Skeleton width="40%" height={38} />
+              <Skeleton width="60%" height={22} />
+              <Stack direction="row" spacing={1} sx={{ mt: 2 }}>
+                <Skeleton width={110} height={34} sx={{ borderRadius: 99 }} />
+                <Skeleton width={120} height={34} sx={{ borderRadius: 99 }} />
+                <Skeleton width={140} height={34} sx={{ borderRadius: 99 }} />
+              </Stack>
+            </Stack>
+          </CardContent>
+        </SoftCard>
+
+        <Stack spacing={2}>
+          {[1, 2, 3].map((i) => (
+            <SoftCard key={i}>
+              <CardContent sx={{ p: 3 }}>
+                <Stack direction="row" spacing={2} alignItems="center">
+                  <Skeleton variant="circular" width={48} height={48} />
+                  <Box sx={{ flex: 1 }}>
+                    <Skeleton width="50%" height={22} />
+                    <Skeleton width="35%" height={18} />
+                  </Box>
+                  <Skeleton width={120} height={34} sx={{ borderRadius: 99 }} />
+                </Stack>
+              </CardContent>
+            </SoftCard>
+          ))}
+        </Stack>
       </Box>
     );
   }
 
   return (
-    <Box sx={{ p: 3 }}>
-      {/* Header */}
-      <Card sx={{ borderRadius: 4, mb: 3 }}>
-        <CardContent>
+    <Box sx={{ p: { xs: 1.5, md: 2.5 }, maxWidth: 1180, mx: "auto" }}>
+      {/* ✅ Header Premium */}
+      <SoftCard
+        sx={{
+          mb: 2.6,
+          position: "relative",
+          background:
+            "linear-gradient(135deg, rgba(37,99,235,0.12), rgba(99,102,241,0.12))",
+          border: "1px solid rgba(99,102,241,0.25)",
+        }}
+      >
+        {/* glow */}
+        <Box
+          sx={{
+            position: "absolute",
+            inset: 0,
+            background:
+              "radial-gradient(circle at top right, rgba(37,99,235,0.22), transparent 55%)",
+            pointerEvents: "none",
+          }}
+        />
+
+        <CardContent sx={{ p: { xs: 2.4, md: 3 } }}>
           <Stack
             direction={{ xs: "column", md: "row" }}
-            spacing={2}
+            spacing={2.2}
             justifyContent="space-between"
             alignItems={{ xs: "flex-start", md: "center" }}
+            sx={{ position: "relative" }}
           >
-            {/* Left title */}
             <Box>
-              <Typography variant="h4" fontWeight={900}>
-                Settle Up
-              </Typography>
-              <Typography color="text.secondary">
-                See who owes whom and close balances.
-              </Typography>
+              <Stack direction="row" spacing={1.2} alignItems="center">
+                <Avatar
+                  sx={{
+                    width: 46,
+                    height: 46,
+                    bgcolor: alpha("#2563eb", 0.16),
+                    color: "#2563eb",
+                    fontWeight: 900,
+                  }}
+                >
+                  <HandshakeIcon />
+                </Avatar>
+
+                <Box>
+                  <Typography sx={{ fontSize: 28, fontWeight: 950 }}>
+                    Settle Up
+                  </Typography>
+                  <Typography sx={{ color: "text.secondary", fontWeight: 700 }}>
+                    Close balances and record settlements.
+                  </Typography>
+                </Box>
+              </Stack>
 
               <Stack
                 direction="row"
                 spacing={1}
-                sx={{ mt: 2, flexWrap: "wrap" }}
+                sx={{ mt: 1.8, flexWrap: "wrap" }}
               >
-                <Chip label={`${balances.length} balances`} />
-                <Chip label={`${suggestions.length} suggestions`} />
+                <Chip
+                  icon={<AccountBalanceWalletIcon />}
+                  label={`${balances.length} balances`}
+                  sx={{ fontWeight: 900 }}
+                />
+                <Chip
+                  icon={<LightbulbIcon />}
+                  label={`${suggestions.length} suggestions`}
+                  color="primary"
+                  variant="outlined"
+                  sx={{ fontWeight: 900 }}
+                />
+                <Chip
+                  icon={<HistoryIcon />}
+                  label={`${history.length} logs`}
+                  variant="outlined"
+                  sx={{ fontWeight: 900 }}
+                />
               </Stack>
             </Box>
 
-            {/* Right group summary chips */}
-            {groupSummary && (
-              <Stack direction="row" spacing={1} sx={{ flexWrap: "wrap" }}>
-                <Chip label={`👥 ${groupSummary.membersCount} members`} />
-                <Chip label={`🧾 ${groupSummary.totalExpenses} expenses`} />
-                <Chip label={`✅ ${groupSummary.totalSettlements} settles`} />
-                <Chip label={`💡 ${groupSummary.suggestionCount} suggestions`} />
-              </Stack>
-            )}
-          </Stack>
-
-          {/* Premium "You summary" strip */}
-          {groupSummary && (
-            <Card
-              sx={{
-                mt: 2.5,
-                borderRadius: 4,
-                border: "1px solid rgba(0,0,0,0.08)",
-                background:
-                  (groupSummary?.you?.net || 0) > 0
-                    ? "linear-gradient(135deg, rgba(34,197,94,0.10), rgba(16,185,129,0.10))"
-                    : (groupSummary?.you?.net || 0) < 0
-                    ? "linear-gradient(135deg, rgba(245,158,11,0.12), rgba(251,191,36,0.12))"
-                    : "linear-gradient(135deg, rgba(37,99,235,0.08), rgba(99,102,241,0.08))",
-              }}
-              elevation={0}
-            >
-              <CardContent sx={{ py: 2 }}>
-                <Stack
-                  direction={{ xs: "column", sm: "row" }}
-                  spacing={2}
-                  justifyContent="space-between"
-                  alignItems={{ xs: "flex-start", sm: "center" }}
-                >
-                  <Box>
-                    <Typography fontWeight={900} sx={{ fontSize: 16 }}>
-                      Group: {groupSummary.groupName}
-                    </Typography>
-                    <Typography color="text.secondary" sx={{ fontSize: 13 }}>
-                      Your position in this group (net balance)
-                    </Typography>
-                  </Box>
-
-                  <Chip
-                    color={
-                      (groupSummary?.you?.net || 0) > 0
-                        ? "success"
-                        : (groupSummary?.you?.net || 0) < 0
-                        ? "warning"
-                        : "primary"
-                    }
-                    variant="outlined"
-                    sx={{
-                      fontWeight: 900,
-                      fontSize: 14,
-                      px: 1,
-                      py: 2.2,
-                      borderRadius: 3,
-                    }}
-                    label={`You ${
-                      (groupSummary?.you?.net || 0) > 0
-                        ? "get back"
-                        : (groupSummary?.you?.net || 0) < 0
-                        ? "owe"
-                        : "are settled"
-                    } ₹${formatINR(Math.abs(groupSummary?.you?.net || 0))}`}
-                  />
-                </Stack>
-              </CardContent>
-            </Card>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Balances */}
-      <Card sx={{ borderRadius: 4, mb: 3 }}>
-        <CardContent>
-          <Typography variant="h6" fontWeight={700} sx={{ mb: 1 }}>
-            Balances
-          </Typography>
-          <Divider sx={{ mb: 2 }} />
-
-          <Stack spacing={1.5}>
-            {balances.map((b) => (
-              <Box
-                key={String(b.userId)}
-                sx={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                  p: 1.5,
-                  borderRadius: 3,
-                  border: "1px solid",
-                  borderColor: "divider",
-                }}
-              >
-                <Stack direction="row" spacing={1.2} alignItems="center">
-                  <Avatar>{b.fullName?.[0]?.toUpperCase()}</Avatar>
-                  <Typography fontWeight={600}>{b.fullName}</Typography>
-                </Stack>
+            {/* ✅ group summary */}
+            {groupSummary ? (
+              <Stack spacing={1} alignItems={{ xs: "flex-start", md: "flex-end" }}>
+                <Chip
+                  icon={<GroupsIcon />}
+                  label={`Group: ${groupSummary.groupName}`}
+                  sx={{ fontWeight: 900 }}
+                />
 
                 <Chip
-                  label={`${b.net >= 0 ? "gets" : "owes"} ₹${formatINR(
-                    Math.abs(b.net)
-                  )}`}
-                  color={b.net >= 0 ? "success" : "warning"}
-                  variant="outlined"
+                  label={netChip.label}
+                  sx={{
+                    fontWeight: 950,
+                    px: 1,
+                    borderRadius: 3,
+                    bgcolor: alpha(netChip.color, 0.12),
+                    color: netChip.color,
+                    border: `1px solid ${alpha(netChip.color, 0.22)}`,
+                  }}
                 />
-              </Box>
-            ))}
+              </Stack>
+            ) : null}
           </Stack>
         </CardContent>
-      </Card>
+      </SoftCard>
 
-      {/* Suggestions */}
-      <Card sx={{ borderRadius: 4, mb: 3 }}>
-        <CardContent>
+      {/* ✅ Balances */}
+      <SoftCard sx={{ mb: 2.6 }}>
+        <CardContent sx={{ p: { xs: 2.4, md: 3 } }}>
+          <Stack direction="row" spacing={1.2} alignItems="center">
+            <Avatar
+              sx={{
+                bgcolor: alpha("#0f172a", 0.06),
+                color: "#0f172a",
+                fontWeight: 900,
+              }}
+            >
+              <AccountBalanceWalletIcon />
+            </Avatar>
+            <Typography sx={{ fontSize: 18, fontWeight: 950 }}>
+              Balances
+            </Typography>
+          </Stack>
+
+          <Divider sx={{ my: 1.8, opacity: 0.7 }} />
+
+          {balances.length === 0 ? (
+            <Typography sx={{ color: "text.secondary", fontWeight: 700 }}>
+              No balances found ✅
+            </Typography>
+          ) : (
+            <Stack spacing={1.2}>
+              {balances.map((b) => (
+                <Box
+                  key={String(b.userId)}
+                  sx={{
+                    p: 1.4,
+                    borderRadius: 4,
+                    border: "1px solid rgba(226,232,240,0.95)",
+                    bgcolor: "rgba(255,255,255,0.65)",
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    gap: 2,
+                    transition: "0.2s",
+                    "&:hover": {
+                      transform: "translateY(-1px)",
+                      boxShadow: "0 14px 45px rgba(2,6,23,0.08)",
+                    },
+                  }}
+                >
+                  <Stack direction="row" spacing={1.2} alignItems="center">
+                    <Avatar
+                      sx={{
+                        bgcolor: alpha("#2563eb", 0.14),
+                        color: "#2563eb",
+                        fontWeight: 900,
+                      }}
+                    >
+                      {b.fullName?.[0]?.toUpperCase()}
+                    </Avatar>
+                    <Box>
+                      <Typography fontWeight={950}>{b.fullName}</Typography>
+                      <Typography sx={{ fontSize: 13, color: "text.secondary" }}>
+                        Net position
+                      </Typography>
+                    </Box>
+                  </Stack>
+
+                  <Chip
+                    label={`${b.net >= 0 ? "gets" : "owes"} ₹${formatINR(
+                      Math.abs(b.net)
+                    )}`}
+                    sx={{
+                      fontWeight: 950,
+                      borderRadius: 999,
+                      bgcolor:
+                        b.net >= 0
+                          ? "rgba(34,197,94,0.14)"
+                          : "rgba(244,63,94,0.14)",
+                      color: b.net >= 0 ? "#16a34a" : "#e11d48",
+                      border: `1px solid ${
+                        b.net >= 0
+                          ? "rgba(34,197,94,0.26)"
+                          : "rgba(244,63,94,0.28)"
+                      }`,
+                    }}
+                  />
+                </Box>
+              ))}
+            </Stack>
+          )}
+        </CardContent>
+      </SoftCard>
+
+      {/* ✅ Suggestions */}
+      <SoftCard sx={{ mb: 2.6 }}>
+        <CardContent sx={{ p: { xs: 2.4, md: 3 } }}>
           <Stack
             direction={{ xs: "column", sm: "row" }}
             justifyContent="space-between"
             alignItems={{ xs: "flex-start", sm: "center" }}
-            sx={{ mb: 1 }}
+            gap={1.2}
           >
-            <Typography variant="h6" fontWeight={700}>
-              Suggested Settlements
-            </Typography>
+            <Stack direction="row" spacing={1.2} alignItems="center">
+              <Avatar
+                sx={{
+                  bgcolor: alpha("#2563eb", 0.14),
+                  color: "#2563eb",
+                  fontWeight: 900,
+                }}
+              >
+                <LightbulbIcon />
+              </Avatar>
+              <Typography sx={{ fontSize: 18, fontWeight: 950 }}>
+                Suggested Settlements
+              </Typography>
+            </Stack>
 
-            {/* ✅ Tag legend */}
-            <Stack direction="row" spacing={1} sx={{ mt: { xs: 1, sm: 0 } }}>
-              <Chip size="small" label="Recommended" color="primary" />
-              <Chip size="small" label="Min transactions" variant="outlined" />
+            <Stack direction="row" spacing={1}>
+              <Chip
+                size="small"
+                label="Recommended"
+                color="primary"
+                sx={{ fontWeight: 900 }}
+              />
+              <Chip
+                size="small"
+                label="Min transactions"
+                variant="outlined"
+                sx={{ fontWeight: 900 }}
+              />
             </Stack>
           </Stack>
 
-          <Divider sx={{ mb: 2 }} />
+          <Divider sx={{ my: 1.8, opacity: 0.7 }} />
 
           {suggestions.length === 0 ? (
-            <Typography color="text.secondary">
+            <Typography sx={{ color: "text.secondary", fontWeight: 700 }}>
               No suggestions. Everyone is settled ✅
             </Typography>
           ) : (
-            <Stack spacing={1.5}>
+            <Stack spacing={1.4}>
               {suggestions.map((s, idx) => {
                 const key = `${idx}-${s.from}-${s.to}-${s.amount}`;
                 const isSettling = settlingKey === key;
@@ -291,50 +424,93 @@ const SettleUpPage = () => {
                   <Box
                     key={key}
                     sx={{
-                      p: 1.5,
-                      borderRadius: 3,
-                      border: "1px solid",
-                      borderColor: "divider",
+                      p: 1.6,
+                      borderRadius: 4,
+                      border: "1px solid rgba(226,232,240,0.95)",
+                      bgcolor: "rgba(255,255,255,0.64)",
+                      transition: "0.2s",
+                      "&:hover": {
+                        transform: "translateY(-1px)",
+                        boxShadow: "0 18px 55px rgba(2,6,23,0.08)",
+                      },
                     }}
                   >
                     <Stack
-                      direction={{ xs: "column", sm: "row" }}
+                      direction={{ xs: "column", md: "row" }}
                       spacing={2}
-                      alignItems={{ xs: "flex-start", sm: "center" }}
                       justifyContent="space-between"
+                      alignItems={{ xs: "flex-start", md: "center" }}
                     >
-                      <Stack direction="row" spacing={1} alignItems="center">
-                        <Avatar>{getName(s.from)?.[0]?.toUpperCase()}</Avatar>
-                        <Typography fontWeight={800}>
-                          {getName(s.from)}
-                        </Typography>
+                      <Stack
+                        direction="row"
+                        spacing={1.2}
+                        alignItems="center"
+                        flexWrap="wrap"
+                      >
+                        <Avatar
+                          sx={{
+                            bgcolor: alpha("#0f172a", 0.06),
+                            fontWeight: 900,
+                          }}
+                        >
+                          {getName(s.from)?.[0]?.toUpperCase()}
+                        </Avatar>
+                        <Typography fontWeight={950}>{getName(s.from)}</Typography>
 
-                        <ArrowForward sx={{ mx: 1 }} />
+                        <ArrowForward sx={{ opacity: 0.55 }} />
 
-                        <Avatar>{getName(s.to)?.[0]?.toUpperCase()}</Avatar>
-                        <Typography fontWeight={800}>{getName(s.to)}</Typography>
+                        <Avatar
+                          sx={{
+                            bgcolor: alpha("#0f172a", 0.06),
+                            fontWeight: 900,
+                          }}
+                        >
+                          {getName(s.to)?.[0]?.toUpperCase()}
+                        </Avatar>
+                        <Typography fontWeight={950}>{getName(s.to)}</Typography>
 
-                        {/* ✅ badges */}
-                        <Stack direction="row" spacing={1} sx={{ ml: 1 }}>
-                          <Chip size="small" label="Recommended" color="primary" />
-                          <Chip
-                            size="small"
-                            label="Min transactions"
-                            variant="outlined"
-                          />
-                        </Stack>
+                        <Chip
+                          size="small"
+                          label="Recommended"
+                          color="primary"
+                          sx={{ fontWeight: 900 }}
+                        />
+                        <Chip
+                          size="small"
+                          label="Min transactions"
+                          variant="outlined"
+                          sx={{ fontWeight: 900 }}
+                        />
                       </Stack>
 
                       <Stack direction="row" spacing={1} alignItems="center">
-                        <Chip label={`₹${formatINR(s.amount)}`} />
-                        <Button
-                          variant="contained"
-                          disabled={isSettling}
-                          onClick={() => handleMarkSettled(s, idx)}
-                          sx={{ fontWeight: 900 }}
-                        >
-                          {isSettling ? "Saving..." : "Mark Settled"}
-                        </Button>
+                        <Chip
+                          icon={<SavingsIcon />}
+                          label={`₹${formatINR(s.amount)}`}
+                          sx={{ fontWeight: 950 }}
+                        />
+
+                        <Tooltip title="Record this settlement">
+                          <Button
+                            variant="contained"
+                            disabled={isSettling}
+                            onClick={() => handleMarkSettled(s, idx)}
+                            sx={{
+                              fontWeight: 950,
+                              borderRadius: 999,
+                              px: 2.2,
+                              textTransform: "none",
+                            }}
+                          >
+                            {isSettling ? (
+                              <>
+                                <CircularProgress size={18} sx={{ mr: 1 }} /> Saving
+                              </>
+                            ) : (
+                              "Mark Settled"
+                            )}
+                          </Button>
+                        </Tooltip>
                       </Stack>
                     </Stack>
                   </Box>
@@ -343,37 +519,55 @@ const SettleUpPage = () => {
             </Stack>
           )}
         </CardContent>
-      </Card>
+      </SoftCard>
 
-      {/* History */}
-      <Card sx={{ borderRadius: 4 }}>
-        <CardContent>
-          <Typography variant="h6" fontWeight={700} sx={{ mb: 1 }}>
-            Settlement History
-          </Typography>
-          <Divider sx={{ mb: 2 }} />
+      {/* ✅ History */}
+      <SoftCard>
+        <CardContent sx={{ p: { xs: 2.4, md: 3 } }}>
+          <Stack direction="row" spacing={1.2} alignItems="center">
+            <Avatar
+              sx={{
+                bgcolor: alpha("#16a34a", 0.12),
+                color: "#16a34a",
+                fontWeight: 900,
+              }}
+            >
+              <HistoryIcon />
+            </Avatar>
+            <Typography sx={{ fontSize: 18, fontWeight: 950 }}>
+              Settlement History
+            </Typography>
+          </Stack>
+
+          <Divider sx={{ my: 1.8, opacity: 0.7 }} />
 
           {history.length === 0 ? (
-            <Typography color="text.secondary">No settlements yet.</Typography>
+            <Typography sx={{ color: "text.secondary", fontWeight: 700 }}>
+              No settlements yet.
+            </Typography>
           ) : (
-            <Stack spacing={1.2}>
+            <Stack spacing={1.3}>
               {history.map((h) => (
                 <Box
                   key={h._id}
                   sx={{
                     p: 1.6,
-                    borderRadius: 3,
-                    border: "1px solid",
-                    borderColor: "divider",
+                    borderRadius: 4,
+                    border: "1px solid rgba(226,232,240,0.95)",
+                    bgcolor: "rgba(255,255,255,0.62)",
                     display: "flex",
                     justifyContent: "space-between",
                     alignItems: "center",
                     gap: 2,
+                    transition: "0.2s",
+                    "&:hover": {
+                      transform: "translateY(-1px)",
+                      boxShadow: "0 18px 55px rgba(2,6,23,0.08)",
+                    },
                   }}
                 >
-                  {/* Left */}
-                  <Box sx={{ flex: 1 }}>
-                    <Typography fontWeight={900}>
+                  <Box sx={{ flex: 1, minWidth: 0 }}>
+                    <Typography fontWeight={950} noWrap>
                       {h.from?.fullName} → {h.to?.fullName}
                     </Typography>
 
@@ -382,40 +576,52 @@ const SettleUpPage = () => {
                       spacing={1}
                       sx={{ mt: 1, flexWrap: "wrap" }}
                     >
-                      <Chip size="small" label={`Paid by: ${h.from?.fullName}`} />
                       <Chip
                         size="small"
-                        label={`Received by: ${h.to?.fullName}`}
-                      />
-                      <Chip
-                        size="small"
-                        color="primary"
                         label={`₹${formatINR(h.amount)}`}
+                        color="primary"
+                        sx={{ fontWeight: 900 }}
                       />
                       <Chip
                         size="small"
                         variant="outlined"
-                        label={new Date(h.settledAt || h.createdAt).toLocaleString()}
+                        label={new Date(
+                          h.settledAt || h.createdAt
+                        ).toLocaleString()}
+                        sx={{ fontWeight: 900 }}
                       />
                     </Stack>
                   </Box>
 
-                  {/* Right */}
                   <Chip
-                    color="success"
-                    variant="outlined"
-                    sx={{ fontWeight: 900 }}
-                    label="Settled ✅"
+                    icon={<CheckCircleIcon />}
+                    label="Settled"
+                    sx={{
+                      fontWeight: 950,
+                      borderRadius: 999,
+                      bgcolor: "rgba(34,197,94,0.14)",
+                      color: "#16a34a",
+                      border: "1px solid rgba(34,197,94,0.25)",
+                    }}
                   />
                 </Box>
               ))}
             </Stack>
           )}
         </CardContent>
-      </Card>
+      </SoftCard>
 
-      {/* Back Button */}
-      <Button sx={{ mt: 2 }} onClick={() => navigate(-1)}>
+      {/* ✅ Back */}
+      <Button
+        startIcon={<ArrowBackIcon />}
+        onClick={() => navigate(-1)}
+        sx={{
+          mt: 2.2,
+          borderRadius: 999,
+          fontWeight: 950,
+          textTransform: "none",
+        }}
+      >
         Back
       </Button>
     </Box>
