@@ -14,25 +14,36 @@ const app = express();
 const allowedOrigins = [
   process.env.FRONTEND_URL,
   process.env.CORS_ORIGIN,
-  "https://expense-spliter-taupe.vercel.app",
-  "https://expense-spliter-2h1kqyfbw-vivek-rathores-projects-f915393f.vercel.app",
   "http://localhost:5173",
 ].filter(Boolean);
 
+const isVercelPreview = (origin) => {
+  try {
+    const url = new URL(origin);
+    return (
+      url.hostname.endsWith(".vercel.app") &&
+      url.hostname.startsWith("expense-spliter-")
+    );
+  } catch {
+    return false;
+  }
+};
 
 app.use(
   cors({
     origin: function (origin, callback) {
-      // ✅ allow requests with no origin (postman, curl)
       if (!origin) return callback(null, true);
 
-      if (allowedOrigins.includes(origin)) return callback(null, true);
+      if (allowedOrigins.includes(origin) || isVercelPreview(origin)) {
+        return callback(null, true);
+      }
 
       return callback(new Error("Not allowed by CORS"));
     },
     credentials: true,
   })
 );
+
 
 app.use(express.json({ limit: "16kb" }));
 app.use(express.urlencoded({ extended: true, limit: "16kb" }));
