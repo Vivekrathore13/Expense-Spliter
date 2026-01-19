@@ -20,13 +20,8 @@ const allowedOrigins = [
 
 const corsOptions = {
   origin: (origin, callback) => {
-    // ✅ allow Postman / curl
-    if (!origin) return callback(null, true);
-
-    // ✅ allow production origins
+    if (!origin) return callback(null, true); // postman/curl
     if (allowedOrigins.includes(origin)) return callback(null, true);
-
-    // ✅ allow any vercel preview URL
     if (origin.includes(".vercel.app")) return callback(null, true);
 
     return callback(null, false);
@@ -36,9 +31,14 @@ const corsOptions = {
   allowedHeaders: ["Content-Type", "Authorization"],
 };
 
-// ✅ IMPORTANT: allow preflight
-app.options("/*/", cors(corsOptions));
+// ✅ ONLY this is enough
 app.use(cors(corsOptions));
+
+// ✅ OPTIONAL: handle OPTIONS without crash
+// app.use((req, res, next) => {
+//   if (req.method === "OPTIONS") return res.sendStatus(200);
+//   next();
+// });
 
 app.use(express.json({ limit: "16kb" }));
 app.use(express.urlencoded({ extended: true, limit: "16kb" }));
