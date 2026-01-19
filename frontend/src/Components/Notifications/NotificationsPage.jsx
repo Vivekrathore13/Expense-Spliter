@@ -17,6 +17,10 @@ import {
   TextField,
   InputAdornment,
   Skeleton,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
 } from "@mui/material";
 
 import DoneAllIcon from "@mui/icons-material/DoneAll";
@@ -25,6 +29,8 @@ import MarkEmailReadOutlinedIcon from "@mui/icons-material/MarkEmailReadOutlined
 import NotificationsActiveIcon from "@mui/icons-material/NotificationsActive";
 import SearchIcon from "@mui/icons-material/Search";
 import RefreshIcon from "@mui/icons-material/Refresh";
+import PaymentIcon from "@mui/icons-material/Payment";
+import SendIcon from "@mui/icons-material/Send";
 
 import { alpha } from "@mui/material/styles";
 
@@ -35,6 +41,9 @@ import {
   deleteOneNotification,
 } from "../../services/notificationService";
 
+import axiosInstance from "../../services/axiosinstance";
+import { toast } from "react-toastify";
+
 import { timeAgo } from "../../services/timeAgo";
 
 const typeMeta = (type = "INFO") => {
@@ -42,6 +51,9 @@ const typeMeta = (type = "INFO") => {
 
   if (t.includes("INVITE"))
     return { label: "INVITE", color: "primary", icon: "✉️" };
+
+  if (t.includes("PAYMENT_DETAILS_REQUEST"))
+    return { label: "PAYMENT REQUEST", color: "info", icon: "💸" };
 
   if (t.includes("SETTLE"))
     return { label: "SETTLE", color: "success", icon: "✅" };
@@ -72,6 +84,11 @@ const NotificationsPage = () => {
   const [loading, setLoading] = useState(true);
   const [list, setList] = useState([]);
   const [search, setSearch] = useState("");
+
+  // ✅ payment modal
+  const [openPayModal, setOpenPayModal] = useState(false);
+  const [upiInput, setUpiInput] = useState("");
+  const [savingUpi, setSavingUpi] = useState(false);
 
   const loadNotifications = async () => {
     try {
@@ -140,6 +157,47 @@ const NotificationsPage = () => {
     }
   };
 
+  // ✅ open modal from card action
+  const openShareUpiModal = () => {
+    const user = JSON.parse(localStorage.getItem("user") || "null");
+    setUpiInput(user?.upiId || "");
+    setOpenPayModal(true);
+  };
+
+  // ✅ Save UPI to backend
+  const handleSaveUpi = async () => {
+    try {
+      setSavingUpi(true);
+
+      const normalized = (upiInput || "").trim().toLowerCase();
+      if (!normalized) {
+        toast.error("UPI ID required");
+        return;
+      }
+
+      const upiRegex = /^[a-zA-Z0-9.\-_]{2,256}@[a-zA-Z]{2,64}$/;
+      if (!upiRegex.test(normalized)) {
+        toast.error("Invalid UPI format (example: name@upi)");
+        return;
+      }
+
+      const res = await axiosInstance.patch(`/users/upi`, { upiId: normalized });
+
+      const updatedUser = res?.data?.data;
+      if (updatedUser?._id) {
+        localStorage.setItem("user", JSON.stringify(updatedUser));
+      }
+
+      toast.success("UPI shared ✅");
+      setOpenPayModal(false);
+    } catch (err) {
+      console.log(err);
+      toast.error(err?.response?.data?.message || "Failed to save UPI");
+    } finally {
+      setSavingUpi(false);
+    }
+  };
+
   const COLORS = {
     heading: "#0f172a",
     text: "rgba(15,23,42,0.78)",
@@ -191,21 +249,28 @@ const NotificationsPage = () => {
                 </Avatar>
 
                 <Box>
-                  <Typography variant="h5" fontWeight={950} sx={{ color: COLORS.heading }}>
+                  <Typography
+                    variant="h5"
+                    fontWeight={950}
+                    sx={{ color: COLORS.heading }}
+                  >
                     Notifications
                   </Typography>
 
-                  <Typography sx={{ color: COLORS.text, fontWeight: 800, mt: 0.3 }}>
+                  <Typography
+                    sx={{ color: COLORS.text, fontWeight: 800, mt: 0.3 }}
+                  >
                     Stay updated about invites, expenses & settlements.
                   </Typography>
                 </Box>
               </Stack>
 
-              <Stack direction="row" spacing={1} sx={{ mt: 1.4, flexWrap: "wrap" }}>
-                <Chip
-                  label={`Total: ${list.length}`}
-                  sx={{ fontWeight: 900 }}
-                />
+              <Stack
+                direction="row"
+                spacing={1}
+                sx={{ mt: 1.4, flexWrap: "wrap" }}
+              >
+                <Chip label={`Total: ${list.length}`} sx={{ fontWeight: 900 }} />
                 <Chip
                   color="primary"
                   variant="outlined"
@@ -306,7 +371,11 @@ const NotificationsPage = () => {
                       <Skeleton height={18} width="40%" />
                       <Skeleton height={16} width="70%" />
                     </Box>
-                    <Skeleton height={26} width={90} sx={{ borderRadius: 99 }} />
+                    <Skeleton
+                      height={26}
+                      width={90}
+                      sx={{ borderRadius: 99 }}
+                    />
                   </Stack>
                 </Card>
               ))}
@@ -316,7 +385,9 @@ const NotificationsPage = () => {
               <Typography sx={{ fontWeight: 950, fontSize: 18 }}>
                 No notifications 😄
               </Typography>
-              <Typography sx={{ mt: 0.7, color: "text.secondary", fontWeight: 800 }}>
+              <Typography
+                sx={{ mt: 0.7, color: "text.secondary", fontWeight: 800 }}
+              >
                 You're all caught up ✅
               </Typography>
             </Box>
@@ -326,6 +397,10 @@ const NotificationsPage = () => {
                 const meta = typeMeta(n.type);
                 const isUnread = !n.isRead;
 
+                const isPaymentReq =
+                  String(n?.type || "").toUpperCase() ===
+                  "PAYMENT_DETAILS_REQUEST";
+
                 return (
                   <Card
                     key={n._id}
@@ -333,7 +408,9 @@ const NotificationsPage = () => {
                       borderRadius: 4,
                       boxShadow: "none",
                       border: `1px solid ${
-                        isUnread ? alpha("#2563eb", 0.35) : "rgba(226,232,240,0.95)"
+                        isUnread
+                          ? alpha("#2563eb", 0.35)
+                          : "rgba(226,232,240,0.95)"
                       }`,
                       bgcolor: isUnread ? alpha("#2563eb", 0.04) : "transparent",
                       transition: "0.2s",
@@ -344,78 +421,156 @@ const NotificationsPage = () => {
                     }}
                   >
                     <CardContent sx={{ p: 2.2 }}>
-                      <Stack direction="row" justifyContent="space-between" gap={2}>
-                        {/* left */}
-                        <Stack direction="row" spacing={1.5} sx={{ flex: 1, minWidth: 0 }}>
-                          <Avatar
-                            sx={{
-                              width: 48,
-                              height: 48,
-                              fontWeight: 950,
-                              bgcolor: alpha("#0f172a", 0.05),
-                              border: `1px solid ${alpha("#0f172a", 0.08)}`,
-                            }}
+                      <Stack spacing={1.2}>
+                        <Stack
+                          direction="row"
+                          justifyContent="space-between"
+                          gap={2}
+                        >
+                          {/* left */}
+                          <Stack
+                            direction="row"
+                            spacing={1.5}
+                            sx={{ flex: 1, minWidth: 0 }}
                           >
-                            {meta.icon}
-                          </Avatar>
+                            <Avatar
+                              sx={{
+                                width: 48,
+                                height: 48,
+                                fontWeight: 950,
+                                bgcolor: alpha("#0f172a", 0.05),
+                                border: `1px solid ${alpha("#0f172a", 0.08)}`,
+                              }}
+                            >
+                              {meta.icon}
+                            </Avatar>
 
-                          <Box sx={{ flex: 1, minWidth: 0 }}>
-                            <Stack direction="row" spacing={1} alignItems="center" sx={{ flexWrap: "wrap" }}>
-                              {isUnread && (
-                                <Chip size="small" color="primary" label="Unread" sx={{ fontWeight: 950 }} />
-                              )}
+                            <Box sx={{ flex: 1, minWidth: 0 }}>
+                              <Stack
+                                direction="row"
+                                spacing={1}
+                                alignItems="center"
+                                sx={{ flexWrap: "wrap" }}
+                              >
+                                {isUnread && (
+                                  <Chip
+                                    size="small"
+                                    color="primary"
+                                    label="Unread"
+                                    sx={{ fontWeight: 950 }}
+                                  />
+                                )}
 
+                                <Chip
+                                  size="small"
+                                  label={meta.label}
+                                  color={meta.color}
+                                  variant="outlined"
+                                  sx={{ fontWeight: 950 }}
+                                />
+
+                                <Typography
+                                  sx={{
+                                    fontSize: 12,
+                                    color: COLORS.muted,
+                                    fontWeight: 900,
+                                  }}
+                                >
+                                  {timeAgo(n.createdAt)}
+                                </Typography>
+                              </Stack>
+
+                              <Typography
+                                sx={{
+                                  mt: 0.9,
+                                  fontWeight: 950,
+                                  fontSize: 16,
+                                }}
+                                noWrap
+                              >
+                                {n.title || "Notification"}
+                              </Typography>
+
+                              <Typography
+                                sx={{
+                                  mt: 0.3,
+                                  color: COLORS.text,
+                                  fontWeight: 700,
+                                }}
+                              >
+                                {n.message || "—"}
+                              </Typography>
+                            </Box>
+                          </Stack>
+
+                          {/* actions */}
+                          <Stack direction="row" spacing={0.6} alignItems="center">
+                            {!n.isRead && (
+                              <Tooltip title="Mark as read">
+                                <IconButton
+                                  onClick={() => handleMarkRead(n._id)}
+                                  sx={{
+                                    borderRadius: 3,
+                                    border: `1px solid ${alpha(
+                                      "#2563eb",
+                                      0.25
+                                    )}`,
+                                  }}
+                                >
+                                  <MarkEmailReadOutlinedIcon />
+                                </IconButton>
+                              </Tooltip>
+                            )}
+
+                            <Tooltip title="Delete">
+                              <IconButton
+                                onClick={() => handleDelete(n._id)}
+                                sx={{
+                                  borderRadius: 3,
+                                  border: `1px solid ${alpha(
+                                    "#e11d48",
+                                    0.25
+                                  )}`,
+                                }}
+                              >
+                                <DeleteOutlineIcon color="error" />
+                              </IconButton>
+                            </Tooltip>
+                          </Stack>
+                        </Stack>
+
+                        {/* ✅ Special action for payment request */}
+                        {isPaymentReq ? (
+                          <>
+                            <Divider sx={{ opacity: 0.6 }} />
+                            <Stack
+                              direction={{ xs: "column", sm: "row" }}
+                              spacing={1}
+                              alignItems={{ xs: "stretch", sm: "center" }}
+                            >
                               <Chip
-                                size="small"
-                                label={meta.label}
-                                color={meta.color}
-                                variant="outlined"
+                                icon={<PaymentIcon />}
+                                label="Someone requested your payment details"
                                 sx={{ fontWeight: 950 }}
                               />
 
-                              <Typography sx={{ fontSize: 12, color: COLORS.muted, fontWeight: 900 }}>
-                                {timeAgo(n.createdAt)}
-                              </Typography>
-                            </Stack>
-
-                            <Typography sx={{ mt: 0.9, fontWeight: 950, fontSize: 16 }} noWrap>
-                              {n.title || "Notification"}
-                            </Typography>
-
-                            <Typography sx={{ mt: 0.3, color: COLORS.text, fontWeight: 700 }}>
-                              {n.message || "—"}
-                            </Typography>
-                          </Box>
-                        </Stack>
-
-                        {/* actions */}
-                        <Stack direction="row" spacing={0.6} alignItems="center">
-                          {!n.isRead && (
-                            <Tooltip title="Mark as read">
-                              <IconButton
-                                onClick={() => handleMarkRead(n._id)}
+                              <Button
+                                onClick={openShareUpiModal}
+                                variant="contained"
+                                startIcon={<SendIcon />}
                                 sx={{
-                                  borderRadius: 3,
-                                  border: `1px solid ${alpha("#2563eb", 0.25)}`,
+                                  ml: "auto",
+                                  borderRadius: 999,
+                                  fontWeight: 950,
+                                  textTransform: "none",
+                                  px: 2.2,
                                 }}
                               >
-                                <MarkEmailReadOutlinedIcon />
-                              </IconButton>
-                            </Tooltip>
-                          )}
-
-                          <Tooltip title="Delete">
-                            <IconButton
-                              onClick={() => handleDelete(n._id)}
-                              sx={{
-                                borderRadius: 3,
-                                border: `1px solid ${alpha("#e11d48", 0.25)}`,
-                              }}
-                            >
-                              <DeleteOutlineIcon color="error" />
-                            </IconButton>
-                          </Tooltip>
-                        </Stack>
+                                Share UPI
+                              </Button>
+                            </Stack>
+                          </>
+                        ) : null}
                       </Stack>
                     </CardContent>
                   </Card>
@@ -425,6 +580,54 @@ const NotificationsPage = () => {
           )}
         </CardContent>
       </SoftCard>
+
+      {/* ✅ Share UPI Modal */}
+      <Dialog open={openPayModal} onClose={() => setOpenPayModal(false)} fullWidth maxWidth="sm">
+        <DialogTitle sx={{ fontWeight: 950 }}>
+          Share Payment Details
+        </DialogTitle>
+
+        <DialogContent>
+          <Typography sx={{ color: "text.secondary", fontWeight: 700, mb: 1.4 }}>
+            Add your UPI ID (optional but recommended). Example: name@upi
+          </Typography>
+
+          <TextField
+            value={upiInput}
+            onChange={(e) => setUpiInput(e.target.value)}
+            label="UPI ID"
+            placeholder="yourname@upi"
+            fullWidth
+            size="small"
+            sx={{ "& .MuiOutlinedInput-root": { borderRadius: 3 } }}
+          />
+        </DialogContent>
+
+        <DialogActions sx={{ p: 2 }}>
+          <Button
+            onClick={() => setOpenPayModal(false)}
+            sx={{ fontWeight: 900, borderRadius: 3 }}
+          >
+            Cancel
+          </Button>
+
+          <Button
+            onClick={handleSaveUpi}
+            disabled={savingUpi}
+            variant="contained"
+            sx={{ fontWeight: 950, borderRadius: 3, px: 2.2 }}
+          >
+            {savingUpi ? (
+              <>
+                <CircularProgress size={18} sx={{ mr: 1 }} />
+                Saving
+              </>
+            ) : (
+              "Save UPI"
+            )}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 };

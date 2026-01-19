@@ -100,7 +100,7 @@ const SettingsPage = () => {
         return;
       }
 
-      const res = await axiosInstance.patch(`/users/upi`, { upiId: normalized });
+      const res = await axiosInstance.patch(`/upi`, { upiId: normalized });
 
       const updatedUser = res?.data?.data;
 

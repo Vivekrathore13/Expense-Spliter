@@ -9,6 +9,18 @@ import mongoose from "mongoose";
 const generateAccessAndRefereshTokens = async (userId) => {
   try {
     const user = await User.findById(userId);
+
+    if (!user) {
+      throw new ApiError(404, "User not found while generating tokens");
+    }
+
+    if (
+      typeof user.generateAccessToken !== "function" ||
+      typeof user.generateRefreshToken !== "function"
+    ) {
+      throw new ApiError(500, "Token methods missing in User model");
+    }
+
     const accessToken = user.generateAccessToken();
     const refreshToken = user.generateRefreshToken();
 
@@ -17,12 +29,14 @@ const generateAccessAndRefereshTokens = async (userId) => {
 
     return { accessToken, refreshToken };
   } catch (error) {
+    console.log("TOKEN ERROR =>", error);
     throw new ApiError(
       500,
-      "Something went wrong while generating referesh and access token"
+      error?.message || "Something went wrong while generating tokens"
     );
   }
 };
+
 // REGISTER USER CONTROLLER
 const registerUser = asyncHandler(async (req, res) => {
   const { fullName, email, password } = req.body;
@@ -63,6 +77,9 @@ const registerUser = asyncHandler(async (req, res) => {
 
 const loginUser = asyncHandler(async (req, res) => {
   const { email, password } = req.body;
+  console.log("LOGIN BODY =>", req.body);
+console.log("LOGIN EMAIL =>", req.body?.email);
+
 
   // 1) validate input
   if (!email || !password) {

@@ -29,8 +29,7 @@ import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import LightbulbIcon from "@mui/icons-material/Lightbulb";
 import SavingsIcon from "@mui/icons-material/Savings";
 import LockIcon from "@mui/icons-material/Lock";
-import ContentCopyIcon from "@mui/icons-material/ContentCopy";
-import PaymentIcon from "@mui/icons-material/Payment";
+import RequestQuoteIcon from "@mui/icons-material/RequestQuote";
 
 const formatINR = (num) =>
   new Intl.NumberFormat("en-IN", { maximumFractionDigits: 0 }).format(
@@ -64,6 +63,8 @@ const SettleUpPage = () => {
   const [groupSummary, setGroupSummary] = useState(null);
 
   const [settlingKey, setSettlingKey] = useState(null);
+  const [requestingKey, setRequestingKey] = useState(null);
+
   // ✅ logged in user id
   const user = JSON.parse(localStorage.getItem("user") || "null");
   const loggedInUserId = user?._id;
@@ -76,43 +77,6 @@ const SettleUpPage = () => {
   }, [balances]);
 
   const getName = (id) => userMap.get(String(id)) || "User";
-
-  // ✅ Copy helper
-  const copyText = async (text) => {
-    try {
-      await navigator.clipboard.writeText(String(text || ""));
-      toast.success("Copied ✅");
-    } catch {
-      toast.error("Copy failed");
-    }
-  };
-
-  // ✅ UPI deep link builder
-  const buildUpiLink = ({ toUpiId, toName, amount }) => {
-    const pa = encodeURIComponent((toUpiId || "").trim());
-    const pn = encodeURIComponent((toName || "Expense Splitter").trim());
-    const am = encodeURIComponent(Number(amount || 0).toFixed(2));
-    const tn = encodeURIComponent("Expense Splitter Settlement");
-    const cu = "INR";
-
-    return `upi://pay?pa=${pa}&pn=${pn}&am=${am}&tn=${tn}&cu=${cu}`;
-  };
-
-  const handlePayViaUpi = (s) => {
-    if (!s?.toUpiId?.trim()) {
-      toast.error("Receiver UPI not available");
-      return;
-    }
-
-    const link = buildUpiLink({
-      toUpiId: s.toUpiId,
-      toName: getName(s.to),
-      amount: s.amount,
-    });
-
-    // ✅ opens UPI apps
-    window.location.href = link;
-  };
 
   const fetchAll = async () => {
     try {
@@ -163,6 +127,44 @@ const SettleUpPage = () => {
     } finally {
       setSettlingKey(null);
     }
+  };
+
+  // ✅ NEW: request payment details (UPI/QR) if not available
+  const handleRequestPaymentDetails = async (s, idx) => {
+    const key = `req-${idx}-${s.from}-${s.to}-${s.amount}`;
+    try {
+      setRequestingKey(key);
+
+      await axiosInstance.post(
+        `/groups/${groupId}/settlements/request-payment-details`,
+        {
+          to: s.to,
+          amount: s.amount,
+        },
+      );
+
+      toast.success("Request sent ✅ Receiver will share UPI/QR soon.");
+    } catch (err) {
+      console.log(err);
+      toast.error(
+        err?.response?.data?.message || "Failed to request payment details",
+      );
+    } finally {
+      setRequestingKey(null);
+    }
+  };
+
+  const handleUpiPay = (s) => {
+    if (!s?.toUpiId) return;
+
+    const upiUrl =
+      `upi://pay?pa=${encodeURIComponent(s.toUpiId)}` +
+      `&pn=${encodeURIComponent(getName(s.to) || "User")}` +
+      `&am=${encodeURIComponent(String(s.amount || ""))}` +
+      `&cu=INR` +
+      `&tn=${encodeURIComponent("Expense Split Settlement")}`;
+
+    window.location.href = upiUrl;
   };
 
   // ✅ helpful computed
@@ -473,6 +475,9 @@ const SettleUpPage = () => {
                 const canSettle = String(loggedInUserId) === String(s.from);
                 const receiverHasUpi = Boolean(s?.toUpiId?.trim());
 
+                const reqKey = `req-${idx}-${s.from}-${s.to}-${s.amount}`;
+                const isRequesting = requestingKey === reqKey;
+
                 return (
                   <Box
                     key={key}
@@ -494,221 +499,245 @@ const SettleUpPage = () => {
                       justifyContent="space-between"
                       alignItems={{ xs: "flex-start", md: "center" }}
                     >
-                      <Stack
-                        direction="row"
-                        spacing={1.2}
-                        alignItems="center"
-                        flexWrap="wrap"
-                      >
-                        <Avatar
-                          sx={{
-                            bgcolor: alpha("#0f172a", 0.06),
-                            fontWeight: 900,
-                          }}
+                      {/* LEFT */}
+                      <Box sx={{ flex: 1, minWidth: 0 }}>
+                        <Stack
+                          direction="row"
+                          spacing={1.2}
+                          alignItems="center"
+                          flexWrap="wrap"
                         >
-                          {getName(s.from)?.[0]?.toUpperCase()}
-                        </Avatar>
-                        <Typography fontWeight={950}>
-                          {getName(s.from)}
-                        </Typography>
+                          <Avatar
+                            sx={{
+                              bgcolor: alpha("#0f172a", 0.06),
+                              fontWeight: 900,
+                            }}
+                          >
+                            {getName(s.from)?.[0]?.toUpperCase()}
+                          </Avatar>
+                          <Typography fontWeight={950}>
+                            {getName(s.from)}
+                          </Typography>
 
-                        <ArrowForward sx={{ opacity: 0.55 }} />
+                          <ArrowForward sx={{ opacity: 0.55 }} />
 
-                        <Avatar
-                          sx={{
-                            bgcolor: alpha("#0f172a", 0.06),
-                            fontWeight: 900,
-                          }}
-                        >
-                          {getName(s.to)?.[0]?.toUpperCase()}
-                        </Avatar>
-                        <Typography fontWeight={950}>{getName(s.to)}</Typography>
+                          <Avatar
+                            sx={{
+                              bgcolor: alpha("#0f172a", 0.06),
+                              fontWeight: 900,
+                            }}
+                          >
+                            {getName(s.to)?.[0]?.toUpperCase()}
+                          </Avatar>
+                          <Typography fontWeight={950}>
+                            {getName(s.to)}
+                          </Typography>
 
-                        <Chip
-                          size="small"
-                          label="Recommended"
-                          color="primary"
-                          sx={{ fontWeight: 900 }}
-                        />
-                        <Chip
-                          size="small"
-                          label="Min transactions"
-                          variant="outlined"
-                          sx={{ fontWeight: 900 }}
-                        />
-
-                        {receiverHasUpi ? (
                           <Chip
                             size="small"
-                            label="UPI available"
-                            sx={{
-                              fontWeight: 900,
-                              bgcolor: "rgba(34,197,94,0.14)",
-                              color: "#16a34a",
-                              border: "1px solid rgba(34,197,94,0.22)",
-                            }}
+                            label="Recommended"
+                            color="primary"
+                            sx={{ fontWeight: 900 }}
                           />
-                        ) : (
                           <Chip
                             size="small"
-                            label="No UPI"
+                            label="Min transactions"
+                            variant="outlined"
+                            sx={{ fontWeight: 900 }}
+                          />
+                        </Stack>
+
+                        <Stack direction="row" spacing={1} sx={{ mt: 1 }}>
+                          <Chip
+                            size="small"
+                            label={receiverHasUpi ? "UPI Available" : "No UPI"}
                             sx={{
                               fontWeight: 900,
-                              bgcolor: "rgba(15,23,42,0.06)",
-                              color: "rgba(15,23,42,0.55)",
-                              border: "1px solid rgba(226,232,240,0.95)",
+                              borderRadius: 999,
+                              bgcolor: receiverHasUpi
+                                ? "rgba(34,197,94,0.14)"
+                                : "rgba(15,23,42,0.06)",
+                              color: receiverHasUpi
+                                ? "#16a34a"
+                                : "rgba(15,23,42,0.55)",
+                              border: `1px solid ${
+                                receiverHasUpi
+                                  ? "rgba(34,197,94,0.22)"
+                                  : "rgba(226,232,240,0.95)"
+                              }`,
                             }}
                           />
-                        )}
-                      </Stack>
+                        </Stack>
+                      </Box>
 
+                      {/* RIGHT (clean + responsive) */}
                       <Stack
-                        direction="row"
+                        direction={{ xs: "column", sm: "row" }}
                         spacing={1}
-                        alignItems="center"
-                        flexWrap="wrap"
+                        alignItems={{ xs: "stretch", sm: "center" }}
+                        justifyContent="flex-end"
+                        sx={{ width: { xs: "100%", md: "auto" } }}
                       >
+                        {/* Amount */}
                         <Chip
                           icon={<SavingsIcon />}
                           label={`₹${formatINR(s.amount)}`}
-                          sx={{ fontWeight: 950 }}
+                          sx={{
+                            fontWeight: 950,
+                            borderRadius: 999,
+                            bgcolor: "rgba(2,6,23,0.06)",
+                            border: "1px solid rgba(2,6,23,0.10)",
+                            alignSelf: { xs: "flex-start", sm: "center" },
+                          }}
                         />
-
-                        {/* ✅ Pay via UPI */}
+                        {/* UPI Status chip (clickable) */}
                         {receiverHasUpi ? (
-                          <Tooltip title={`Pay ${getName(s.to)} via UPI`}>
-                            <span>
-                              <Button
-                                onClick={() => handlePayViaUpi(s)}
-                                variant="outlined"
-                                startIcon={<PaymentIcon />}
-                                sx={{
+                          <Tooltip title="Tap to pay via UPI">
+                            <Chip
+                              label="UPI Available"
+                              variant="outlined"
+                              clickable
+                              onClick={() => handleUpiPay(s)}
+                              sx={{
+                                fontWeight: 950,
+                                borderRadius: 999,
+                                bgcolor: "rgba(34,197,94,0.08)",
+                                border: "1px solid rgba(34,197,94,0.22)",
+                                color: "#16a34a",
+                                cursor: "pointer",
+                                "&:hover": { bgcolor: "rgba(34,197,94,0.12)" },
+                              }}
+                            />
+                          </Tooltip>
+                        ) : (
+                          <Chip
+                            label="UPI Not Available"
+                            variant="outlined"
+                            sx={{
+                              fontWeight: 950,
+                              borderRadius: 999,
+                              bgcolor: "rgba(15,23,42,0.04)",
+                              border: "1px solid rgba(226,232,240,0.95)",
+                              color: "rgba(15,23,42,0.55)",
+                            }}
+                          />
+                        )}
+
+                        {/* ACTION: Mark Settled OR Locked OR Request Details */}
+                        {!canSettle ? (
+                          <Button
+                            variant="contained"
+                            disabled
+                            sx={{
+                              fontWeight: 950,
+                              borderRadius: 999,
+                              textTransform: "none",
+                              px: 2.2,
+                              "&.Mui-disabled": {
+                                opacity: 1,
+                                bgcolor: "rgba(245,158,11,0.14)",
+                                color: "#92400e",
+                                border: "1px solid rgba(245,158,11,0.32)",
+                                boxShadow: "0 12px 35px rgba(245,158,11,0.20)",
+                              },
+                            }}
+                          >
+                            <span
+                              style={{
+                                display: "inline-flex",
+                                alignItems: "center",
+                                gap: 8,
+                                fontWeight: 950,
+                                color: "#92400e",
+                              }}
+                            >
+                              <span
+                                style={{
+                                  width: 24,
+                                  height: 24,
+                                  display: "grid",
+                                  placeItems: "center",
                                   borderRadius: 999,
-                                  fontWeight: 950,
-                                  textTransform: "none",
+                                  background: "rgba(245,158,11,0.22)",
+                                  border: "1px solid rgba(245,158,11,0.45)",
+                                  color: "#b45309",
                                 }}
                               >
-                                Pay via UPI
+                                <LockIcon sx={{ fontSize: 15 }} />
+                              </span>
+                              Locked
+                            </span>
+                          </Button>
+                        ) : receiverHasUpi ? (
+                          <Tooltip title="Record this settlement">
+                            <span>
+                              <Button
+                                variant="contained"
+                                disabled={isSettling}
+                                onClick={() => handleMarkSettled(s, idx)}
+                                sx={{
+                                  fontWeight: 950,
+                                  borderRadius: 999,
+                                  px: 2.2,
+                                  textTransform: "none",
+                                  boxShadow: "none",
+                                  "&:hover": { boxShadow: "none" },
+                                }}
+                              >
+                                {isSettling ? (
+                                  <>
+                                    <CircularProgress
+                                      size={18}
+                                      sx={{ mr: 1 }}
+                                    />{" "}
+                                    Saving
+                                  </>
+                                ) : (
+                                  "Mark Settled"
+                                )}
                               </Button>
                             </span>
                           </Tooltip>
                         ) : (
-                          <Tooltip
-                            title={`${getName(s.to)} has not added UPI ID yet`}
-                          >
+                          <Tooltip title="Ask receiver to share UPI/QR">
                             <span>
                               <Button
-                                disabled
-                                variant="outlined"
-                                startIcon={<PaymentIcon />}
+                                variant="contained"
+                                disabled={isRequesting}
+                                onClick={() =>
+                                  handleRequestPaymentDetails(s, idx)
+                                }
+                                startIcon={<RequestQuoteIcon />}
                                 sx={{
-                                  borderRadius: 999,
                                   fontWeight: 950,
+                                  borderRadius: 999,
+                                  px: 2.2,
                                   textTransform: "none",
+                                  bgcolor: "rgba(37,99,235,0.14)",
+                                  color: "#2563eb",
+                                  border: "1px solid rgba(37,99,235,0.28)",
+                                  boxShadow: "none",
+                                  "&:hover": {
+                                    boxShadow: "none",
+                                    bgcolor: "rgba(37,99,235,0.18)",
+                                  },
                                 }}
                               >
-                                UPI Not Available
+                                {isRequesting ? (
+                                  <>
+                                    <CircularProgress
+                                      size={18}
+                                      sx={{ mr: 1 }}
+                                    />{" "}
+                                    Sending
+                                  </>
+                                ) : (
+                                  "Request Payment Details"
+                                )}
                               </Button>
                             </span>
                           </Tooltip>
                         )}
-
-                        {/* ✅ Copy UPI */}
-                        {receiverHasUpi ? (
-                          <Tooltip title="Copy receiver UPI ID">
-                            <span>
-                              <Button
-                                onClick={() => copyText(s.toUpiId)}
-                                variant="outlined"
-                                startIcon={<ContentCopyIcon />}
-                                sx={{
-                                  borderRadius: 999,
-                                  fontWeight: 950,
-                                  textTransform: "none",
-                                }}
-                              >
-                                Copy UPI
-                              </Button>
-                            </span>
-                          </Tooltip>
-                        ) : null}
-
-                        <Tooltip
-                          title={
-                            canSettle
-                              ? "Record this settlement"
-                              : `Only ${getName(
-                                  s.from,
-                                )} can mark this settlement`
-                          }
-                        >
-                          <span>
-                            <Button
-                              variant="contained"
-                              disabled={!canSettle || isSettling}
-                              onClick={() => handleMarkSettled(s, idx)}
-                              sx={{
-                                fontWeight: 950,
-                                borderRadius: 999,
-                                px: 2.2,
-                                textTransform: "none",
-                                opacity: canSettle ? 1 : 0.55,
-                                cursor: canSettle ? "pointer" : "not-allowed",
-                                bgcolor: canSettle
-                                  ? undefined
-                                  : "rgba(15,23,42,0.06)",
-                                color: canSettle
-                                  ? undefined
-                                  : "rgba(15,23,42,0.45)",
-                                boxShadow: "none",
-                                "&:hover": { boxShadow: "none" },
-                                "&.Mui-disabled": {
-                                  opacity: 1,
-                                  bgcolor: "rgba(245,158,11,0.14)",
-                                  color: "#92400e",
-                                  border: "1px solid rgba(245,158,11,0.32)",
-                                  boxShadow:
-                                    "0 12px 35px rgba(245,158,11,0.20)", // ✅ glow
-                                },
-                              }}
-                            >
-                              {isSettling ? (
-                                <>
-                                  <CircularProgress size={18} sx={{ mr: 1 }} />{" "}
-                                  Saving
-                                </>
-                              ) : canSettle ? (
-                                "Mark Settled"
-                              ) : (
-                                <span
-                                  style={{
-                                    display: "inline-flex",
-                                    alignItems: "center",
-                                    gap: 8,
-                                    fontWeight: 950,
-                                    color: "#92400e",
-                                  }}
-                                >
-                                  <span
-                                    style={{
-                                      width: 24,
-                                      height: 24,
-                                      display: "grid",
-                                      placeItems: "center",
-                                      borderRadius: 999,
-                                      background: "rgba(245,158,11,0.22)", // ✅ yellow highlight
-                                      border: "1px solid rgba(245,158,11,0.45)",
-                                      color: "#b45309",
-                                    }}
-                                  >
-                                    <LockIcon sx={{ fontSize: 15 }} />
-                                  </span>
-                                  Locked
-                                </span>
-                              )}
-                            </Button>
-                          </span>
-                        </Tooltip>
                       </Stack>
                     </Stack>
                   </Box>
