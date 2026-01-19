@@ -11,13 +11,14 @@ import summaryRoutes from "./routes/summary.routes.js";
 
 const app = express();
 
-// ✅ CORS FIX (production ready)
 const allowedOrigins = [
-  process.env.FRONTEND_URL,         // ✅ Vercel url
-  process.env.CORS_ORIGIN,          // ✅ optional extra origin
-  "http://localhost:5173",          // ✅ local frontend
-  "http://localhost:3000",
+  process.env.FRONTEND_URL,
+  process.env.CORS_ORIGIN,
+  "https://expense-spliter-taupe.vercel.app",
+  "https://expense-spliter-2h1kqyfbw-vivek-rathores-projects-f915393f.vercel.app",
+  "http://localhost:5173",
 ].filter(Boolean);
+
 
 app.use(
   cors({
