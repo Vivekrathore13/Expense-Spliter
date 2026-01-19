@@ -11,7 +11,7 @@ import summaryRoutes from "./routes/summary.routes.js";
 
 const app = express();
 
-// ✅ allow preview vercel URLs
+// ✅ Vercel preview URLs allow
 const isVercelPreview = (origin) => {
   try {
     const url = new URL(origin);
@@ -21,27 +21,36 @@ const isVercelPreview = (origin) => {
   }
 };
 
+// ✅ Allowed origins list (IMPORTANT)
 const allowedOrigins = [
+  "https://expense-spliter-taupe.vercel.app",  // ✅ your production frontend
+  "http://localhost:5173",
   process.env.FRONTEND_URL,
   process.env.CORS_ORIGIN,
-  "http://localhost:5173",
 ].filter(Boolean);
 
+// ✅ CORS middleware (must be on top)
 app.use(
   cors({
     origin: function (origin, callback) {
+      // allow postman/curl
       if (!origin) return callback(null, true);
 
-      // ✅ allow production + preview vercel
       if (allowedOrigins.includes(origin) || isVercelPreview(origin)) {
         return callback(null, true);
       }
 
+      console.log("❌ Blocked by CORS:", origin);
       return callback(new Error("Not allowed by CORS"));
     },
     credentials: true,
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
   })
 );
+
+// ✅ VERY IMPORTANT: handle preflight properly
+app.options("*", cors());
 
 app.use(express.json({ limit: "16kb" }));
 app.use(express.urlencoded({ extended: true, limit: "16kb" }));
