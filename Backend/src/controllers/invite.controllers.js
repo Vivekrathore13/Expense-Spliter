@@ -2,9 +2,11 @@ import jwt from "jsonwebtoken";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
+
 import { Group } from "../models/group.model.js";
 import { Invitation } from "../models/invitation.model.js";
 import { User } from "../models/user.model.js";
+
 import { sendEmail } from "../utils/sendEmail.js";
 import { sendNotification } from "../utils/notificationHelper.js";
 
@@ -12,6 +14,8 @@ import { sendNotification } from "../utils/notificationHelper.js";
 const generateAccessAndRefereshTokens = async (userId) => {
   try {
     const user = await User.findById(userId);
+    if (!user) throw new ApiError(404, "User not found while generating tokens");
+
     const accessToken = user.generateAccessToken();
     const refreshToken = user.generateRefreshToken();
 
@@ -34,13 +38,14 @@ export const sendInvite = asyncHandler(async (req, res) => {
   const group = await Group.findById(groupId);
   if (!group) throw new ApiError(404, "Group not found");
 
+  // ✅ Only admin
   if (group.admin.toString() !== req.user._id.toString()) {
     throw new ApiError(403, "Only admin can send invites");
   }
 
   const normalizedEmail = email.toLowerCase().trim();
 
-  // ✅ If user already exists
+  // ✅ If user already exists + already member
   const existedUser = await User.findOne({ email: normalizedEmail });
   if (existedUser) {
     const isAlreadyMember = group.member?.some(
@@ -59,7 +64,7 @@ export const sendInvite = asyncHandler(async (req, res) => {
     expiresAt: { $gt: Date.now() },
   });
 
-  // ✅ NEW FIX: If already sent -> RESEND SAME INVITE
+  // ✅ If invite already exists -> RESEND SAME LINK
   if (existing) {
     const inviteLink = `${process.env.FRONTEND_URL}/join-group?token=${existing.token}`;
 
@@ -79,27 +84,38 @@ export const sendInvite = asyncHandler(async (req, res) => {
       </div>
     `;
 
-    await sendEmail({
-      to: normalizedEmail,
-      subject: "Expense Splitter - Group Invitation (Resent)",
-      html,
-    });
+    // ✅ IMPORTANT: Email fail ho to route crash na ho
+    let emailSent = true;
+    try {
+      await sendEmail({
+        to: normalizedEmail,
+        subject: "Expense Splitter - Group Invitation (Resent)",
+        html,
+      });
+    } catch (e) {
+      emailSent = false;
+      console.log("⚠️ Invite resend email failed:", e?.message);
+    }
 
     // ✅ Notification
     await sendNotification({
       userId: req.user._id,
       groupId,
       type: "INVITE",
-      title: "Invitation Resent",
-      message: `Invite resent to ${normalizedEmail}`,
+      title: emailSent ? "Invitation Resent" : "Invitation Resent (Email Failed)",
+      message: emailSent
+        ? `Invite resent to ${normalizedEmail}`
+        : `Invite resent but email failed for ${normalizedEmail}`,
       meta: { inviteId: existing._id, email: normalizedEmail, groupId },
     });
 
     return res.status(200).json(
       new ApiResponse(
         200,
-        { inviteId: existing._id, link: inviteLink },
-        "Invitation resent successfully ✅"
+        { inviteId: existing._id, link: inviteLink, emailSent },
+        emailSent
+          ? "Invitation resent successfully ✅"
+          : "Invitation resent ✅ (but email failed ⚠️)"
       )
     );
   }
@@ -130,7 +146,6 @@ export const sendInvite = asyncHandler(async (req, res) => {
 
   const inviteLink = `${process.env.FRONTEND_URL}/join-group?token=${token}`;
 
-  // ✅ SEND INVITE EMAIL
   const html = `
     <div style="font-family: Arial, sans-serif; padding: 16px;">
       <h2>You are invited to join a group 🎉</h2>
@@ -147,27 +162,38 @@ export const sendInvite = asyncHandler(async (req, res) => {
     </div>
   `;
 
-  await sendEmail({
-    to: normalizedEmail,
-    subject: "Expense Splitter - Group Invitation",
-    html,
-  });
+  // ✅ IMPORTANT: Email fail ho to route crash na ho
+  let emailSent = true;
+  try {
+    await sendEmail({
+      to: normalizedEmail,
+      subject: "Expense Splitter - Group Invitation",
+      html,
+    });
+  } catch (e) {
+    emailSent = false;
+    console.log("⚠️ Invite email failed:", e?.message);
+  }
 
-  // ✅ ADD NOTIFICATION (invite sent)
+  // ✅ Notification (invite sent)
   await sendNotification({
     userId: req.user._id,
     groupId,
     type: "INVITE",
-    title: "Invitation Sent",
-    message: `Invite sent to ${normalizedEmail}`,
+    title: emailSent ? "Invitation Sent" : "Invitation Created (Email Failed)",
+    message: emailSent
+      ? `Invite sent to ${normalizedEmail}`
+      : `Invite created but email failed for ${normalizedEmail}`,
     meta: { inviteId: invite._id, email: normalizedEmail, groupId },
   });
 
   return res.status(200).json(
     new ApiResponse(
       200,
-      { inviteId: invite._id, link: inviteLink },
-      "Invitation generated successfully ✅"
+      { inviteId: invite._id, link: inviteLink, emailSent },
+      emailSent
+        ? "Invitation generated successfully ✅"
+        : "Invitation generated ✅ (but email failed ⚠️)"
     )
   );
 });
@@ -205,6 +231,7 @@ export const verifyToken = asyncHandler(async (req, res) => {
   );
 });
 
+// ✅ 3) ACCEPT INVITE (Existing logged-in user)
 export const acceptInviteExisting = asyncHandler(async (req, res) => {
   const { token } = req.body;
   const userId = req.user?._id;
@@ -229,6 +256,7 @@ export const acceptInviteExisting = asyncHandler(async (req, res) => {
   const user = await User.findById(userId);
   if (!user) throw new ApiError(404, "User not found");
 
+  // ✅ Invited email should match logged in email
   if (user.email.toLowerCase() !== invite.email.toLowerCase()) {
     throw new ApiError(
       403,
@@ -257,6 +285,7 @@ export const acceptInviteExisting = asyncHandler(async (req, res) => {
   invite.acceptedAt = new Date();
   await invite.save();
 
+  // ✅ Notifications
   await sendNotification({
     userId: userId,
     groupId: group._id,
@@ -282,13 +311,14 @@ export const acceptInviteExisting = asyncHandler(async (req, res) => {
     );
 });
 
-// ✅ 3) ACCEPT INVITE + SIGNUP + AUTO LOGIN (Public)
+// ✅ 4) ACCEPT INVITE + SIGNUP + AUTO LOGIN (Public)
 export const acceptInviteSignup = asyncHandler(async (req, res) => {
   const { token, fullName, password } = req.body;
 
   if (!token) throw new ApiError(400, "Token is required");
-  if (!fullName || !password)
+  if (!fullName || !password) {
     throw new ApiError(400, "Full name and password are required");
+  }
 
   let decoded;
   try {
@@ -317,6 +347,7 @@ export const acceptInviteSignup = asyncHandler(async (req, res) => {
   const group = await Group.findById(groupId);
   if (!group) throw new ApiError(404, "Group not found");
 
+  // ✅ if user already exists
   const existedUser = await User.findOne({ email: email.toLowerCase() });
   if (existedUser) {
     throw new ApiError(409, "User already exists, please login to join group");
@@ -329,6 +360,7 @@ export const acceptInviteSignup = asyncHandler(async (req, res) => {
     isregistered: true,
   });
 
+  // ✅ add member if not already
   const alreadyMember = group.member.some(
     (id) => id.toString() === user._id.toString()
   );
@@ -356,6 +388,7 @@ export const acceptInviteSignup = asyncHandler(async (req, res) => {
     sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
   };
 
+  // ✅ Notifications
   await sendNotification({
     userId: user._id,
     groupId: group._id,
@@ -387,7 +420,7 @@ export const acceptInviteSignup = asyncHandler(async (req, res) => {
     );
 });
 
-// ✅ SENT INVITES
+// ✅ 5) SENT INVITES
 export const getSentInvites = asyncHandler(async (req, res) => {
   const userId = req.user?._id;
 
@@ -410,7 +443,7 @@ export const getSentInvites = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, formatted, "Sent invites fetched successfully ✅"));
 });
 
-// ✅ FIX OLD INVITES (Admin only)
+// ✅ 6) FIX OLD INVITES (Admin only)
 export const fixOldInvites = asyncHandler(async (req, res) => {
   const userId = req.user?._id;
 
