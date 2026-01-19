@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Box,
   Card,
@@ -65,9 +65,14 @@ const SettleUpPage = () => {
   const [settlingKey, setSettlingKey] = useState(null);
   const [requestingKey, setRequestingKey] = useState(null);
 
-  // ✅ logged in user id
-  const user = JSON.parse(localStorage.getItem("user") || "null");
-  const loggedInUserId = user?._id;
+  // ✅ logged in user id (safer parse)
+  let loggedInUserId = null;
+  try {
+    const user = JSON.parse(localStorage.getItem("user") || "null");
+    loggedInUserId = user?._id || null;
+  } catch {
+    loggedInUserId = null;
+  }
 
   // ✅ userId -> name
   const userMap = useMemo(() => {
@@ -78,7 +83,14 @@ const SettleUpPage = () => {
 
   const getName = (id) => userMap.get(String(id)) || "User";
 
-  const fetchAll = async () => {
+  const isMobile = () => {
+    if (typeof navigator === "undefined") return false;
+    return /Android|iPhone|iPad|iPod|Opera Mini|IEMobile|WPDesktop/i.test(
+      navigator.userAgent,
+    );
+  };
+
+  const fetchAll = useCallback(async () => {
     try {
       setLoading(true);
 
@@ -99,12 +111,11 @@ const SettleUpPage = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [groupId]);
 
   useEffect(() => {
     fetchAll();
-    // eslint-disable-next-line
-  }, [groupId]);
+  }, [fetchAll]);
 
   const handleMarkSettled = async (s, idx) => {
     const key = `${idx}-${s.from}-${s.to}-${s.amount}`;
@@ -156,6 +167,11 @@ const SettleUpPage = () => {
 
   const handleUpiPay = (s) => {
     if (!s?.toUpiId) return;
+
+    // ✅ UPI mostly works on mobile, so desktop fallback
+    if (!isMobile()) {
+      toast.info("UPI payment works best on mobile 📱");
+    }
 
     const upiUrl =
       `upi://pay?pa=${encodeURIComponent(s.toUpiId)}` +
@@ -386,9 +402,7 @@ const SettleUpPage = () => {
                     </Avatar>
                     <Box>
                       <Typography fontWeight={950}>{b.fullName}</Typography>
-                      <Typography
-                        sx={{ fontSize: 13, color: "text.secondary" }}
-                      >
+                      <Typography sx={{ fontSize: 13, color: "text.secondary" }}>
                         Net position
                       </Typography>
                     </Box>
@@ -570,7 +584,7 @@ const SettleUpPage = () => {
                         </Stack>
                       </Box>
 
-                      {/* RIGHT (clean + responsive) */}
+                      {/* RIGHT */}
                       <Stack
                         direction={{ xs: "column", sm: "row" }}
                         spacing={1}
@@ -590,7 +604,8 @@ const SettleUpPage = () => {
                             alignSelf: { xs: "flex-start", sm: "center" },
                           }}
                         />
-                        {/* UPI Status chip (clickable) */}
+
+                        {/* UPI Status chip */}
                         {receiverHasUpi ? (
                           <Tooltip title="Tap to pay via UPI">
                             <Chip
@@ -623,7 +638,7 @@ const SettleUpPage = () => {
                           />
                         )}
 
-                        {/* ACTION: Mark Settled OR Locked OR Request Details */}
+                        {/* ACTION */}
                         {!canSettle ? (
                           <Button
                             variant="contained"
@@ -668,75 +683,78 @@ const SettleUpPage = () => {
                               Locked
                             </span>
                           </Button>
-                        ) : receiverHasUpi ? (
-                          <Tooltip title="Record this settlement">
-                            <span>
-                              <Button
-                                variant="contained"
-                                disabled={isSettling}
-                                onClick={() => handleMarkSettled(s, idx)}
-                                sx={{
-                                  fontWeight: 950,
-                                  borderRadius: 999,
-                                  px: 2.2,
-                                  textTransform: "none",
-                                  boxShadow: "none",
-                                  "&:hover": { boxShadow: "none" },
-                                }}
-                              >
-                                {isSettling ? (
-                                  <>
-                                    <CircularProgress
-                                      size={18}
-                                      sx={{ mr: 1 }}
-                                    />{" "}
-                                    Saving
-                                  </>
-                                ) : (
-                                  "Mark Settled"
-                                )}
-                              </Button>
-                            </span>
-                          </Tooltip>
                         ) : (
-                          <Tooltip title="Ask receiver to share UPI/QR">
-                            <span>
-                              <Button
-                                variant="contained"
-                                disabled={isRequesting}
-                                onClick={() =>
-                                  handleRequestPaymentDetails(s, idx)
-                                }
-                                startIcon={<RequestQuoteIcon />}
-                                sx={{
-                                  fontWeight: 950,
-                                  borderRadius: 999,
-                                  px: 2.2,
-                                  textTransform: "none",
-                                  bgcolor: "rgba(37,99,235,0.14)",
-                                  color: "#2563eb",
-                                  border: "1px solid rgba(37,99,235,0.28)",
-                                  boxShadow: "none",
-                                  "&:hover": {
+                          <>
+                            {/* ✅ ALWAYS allow recording settlement (manual also) */}
+                            <Tooltip title="Record this settlement">
+                              <span>
+                                <Button
+                                  variant="contained"
+                                  disabled={isSettling}
+                                  onClick={() => handleMarkSettled(s, idx)}
+                                  sx={{
+                                    fontWeight: 950,
+                                    borderRadius: 999,
+                                    px: 2.2,
+                                    textTransform: "none",
                                     boxShadow: "none",
-                                    bgcolor: "rgba(37,99,235,0.18)",
-                                  },
-                                }}
-                              >
-                                {isRequesting ? (
-                                  <>
-                                    <CircularProgress
-                                      size={18}
-                                      sx={{ mr: 1 }}
-                                    />{" "}
-                                    Sending
-                                  </>
-                                ) : (
-                                  "Request Payment Details"
-                                )}
-                              </Button>
-                            </span>
-                          </Tooltip>
+                                    "&:hover": { boxShadow: "none" },
+                                  }}
+                                >
+                                  {isSettling ? (
+                                    <>
+                                      <CircularProgress size={18} sx={{ mr: 1 }} />{" "}
+                                      Saving
+                                    </>
+                                  ) : (
+                                    "Mark Settled"
+                                  )}
+                                </Button>
+                              </span>
+                            </Tooltip>
+
+                            {/* ✅ If UPI missing -> request details button */}
+                            {!receiverHasUpi ? (
+                              <Tooltip title="Ask receiver to share UPI/QR">
+                                <span>
+                                  <Button
+                                    variant="contained"
+                                    disabled={isRequesting}
+                                    onClick={() =>
+                                      handleRequestPaymentDetails(s, idx)
+                                    }
+                                    startIcon={<RequestQuoteIcon />}
+                                    sx={{
+                                      fontWeight: 950,
+                                      borderRadius: 999,
+                                      px: 2.2,
+                                      textTransform: "none",
+                                      bgcolor: "rgba(37,99,235,0.14)",
+                                      color: "#2563eb",
+                                      border: "1px solid rgba(37,99,235,0.28)",
+                                      boxShadow: "none",
+                                      "&:hover": {
+                                        boxShadow: "none",
+                                        bgcolor: "rgba(37,99,235,0.18)",
+                                      },
+                                    }}
+                                  >
+                                    {isRequesting ? (
+                                      <>
+                                        <CircularProgress
+                                          size={18}
+                                          sx={{ mr: 1 }}
+                                        />{" "}
+                                        Sending
+                                      </>
+                                    ) : (
+                                      "Request Payment Details"
+                                    )}
+                                  </Button>
+                                </span>
+                              </Tooltip>
+                            ) : null}
+                          </>
                         )}
                       </Stack>
                     </Stack>

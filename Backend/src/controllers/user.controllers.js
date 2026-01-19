@@ -75,6 +75,17 @@ const registerUser = asyncHandler(async (req, res) => {
     .json(new ApiResponse(201, createdUser, "User registered successfully"));
 });
 
+const cookieOptions = () => {
+  const isProd = process.env.NODE_ENV === "production";
+
+  return {
+    httpOnly: true,
+    secure: isProd,          // ✅ production = true
+    sameSite: isProd ? "none" : "lax", // ✅ prod = none
+  };
+};
+
+
 const loginUser = asyncHandler(async (req, res) => {
   const { email, password } = req.body;
   console.log("LOGIN BODY =>", req.body);
@@ -111,11 +122,8 @@ console.log("LOGIN EMAIL =>", req.body?.email);
   );
 
   // 6) cookie options
-  const options = {
-    httpOnly: true,
-    secure: false,
-    sameSite: "lax",
-  };
+ const options = cookieOptions();
+
   // 7) send response
   return res
     .status(200)
@@ -157,11 +165,8 @@ const refreshAcessToken = asyncHandler(async (req, res) => {
       throw new ApiError(401, "Refresh token is expired or used");
     }
 
-    const options = {
-      httpOnly: true,
-      secure: false, // ✅ dev mode
-      sameSite: "lax",
-    };
+   const options = cookieOptions();
+
 
     // ✅ generate new pair
     const { accessToken, refreshToken: newrefreshToken } =
@@ -198,11 +203,8 @@ const logoutUser = asyncHandler(async (req, res) => {
   );
 
   // ✅ Clear cookies
-  const options = {
-    httpOnly: true,
-    secure: false,
-    sameSite: "lax",
-  };
+  const options = cookieOptions();
+
 
   return res
     .status(200)
