@@ -11,47 +11,34 @@ import summaryRoutes from "./routes/summary.routes.js";
 
 const app = express();
 
-// ✅ Vercel preview URLs allow
-const isVercelPreview = (origin) => {
-  try {
-    const url = new URL(origin);
-    return url.hostname.endsWith(".vercel.app");
-  } catch {
-    return false;
-  }
-};
-
-// ✅ Allowed origins list (IMPORTANT)
+// ✅ allow ALL vercel deployments + localhost
 const allowedOrigins = [
-  "https://expense-spliter-taupe.vercel.app",  // ✅ your production frontend
-  "http://localhost:5173",
   process.env.FRONTEND_URL,
   process.env.CORS_ORIGIN,
+  "http://localhost:5173",
 ].filter(Boolean);
 
-// ✅ CORS middleware (must be on top)
-app.use(
-  cors({
-    origin: function (origin, callback) {
-      // allow postman/curl
-      if (!origin) return callback(null, true);
+const corsOptions = {
+  origin: (origin, callback) => {
+    // ✅ allow Postman / curl
+    if (!origin) return callback(null, true);
 
-      if (allowedOrigins.includes(origin) || isVercelPreview(origin)) {
-        return callback(null, true);
-      }
+    // ✅ allow production origins
+    if (allowedOrigins.includes(origin)) return callback(null, true);
 
-      console.log("❌ Blocked by CORS:", origin);
-      return callback(new Error("Not allowed by CORS"));
-    },
-    credentials: true,
-    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization"],
-  })
-);
+    // ✅ allow any vercel preview URL
+    if (origin.includes(".vercel.app")) return callback(null, true);
 
-// ✅ VERY IMPORTANT: handle preflight properly
-app.options(/.*/, cors());
+    return callback(null, false);
+  },
+  credentials: true,
+  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"],
+};
 
+// ✅ IMPORTANT: allow preflight
+app.options("*", cors(corsOptions));
+app.use(cors(corsOptions));
 
 app.use(express.json({ limit: "16kb" }));
 app.use(express.urlencoded({ extended: true, limit: "16kb" }));
