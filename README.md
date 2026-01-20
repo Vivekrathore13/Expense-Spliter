@@ -125,26 +125,19 @@ Expense-Splitter/
 ## 📸 Screenshots (Premium UI)
 
 ### 🌐 Public Pages
-
-| Landing Page                      | Login                         | Signup                          |
-| --------------------------------- | ----------------------------- | ------------------------------- |
-| ![Landing](Assets/01-landing.png) | ![Login](Assets/08-login.png) | ![Signup](Assets/09-signup.png) |
-
----
+| Landing Page | Login | Signup |
+|---|---|---|
+| ![Landing](Assets/Screenshot%202026-01-20%20160346.png) | ![Login](Assets/Screenshot%202026-01-20%20162047.png) | ![Signup](Assets/Screenshot%202026-01-20%20162103.png) |
 
 ### 📊 App Pages
-
-| Dashboard                             | Add Expense                               | Group Details                                 |
-| ------------------------------------- | ----------------------------------------- | --------------------------------------------- |
-| ![Dashboard](Assets/03-dashboard.png) | ![Add Expense](Assets/02-add-expense.png) | ![Group Details](Assets/04-group-details.png) |
-
----
+| Dashboard | Add Expense | Group Details |
+|---|---|---|
+| ![Dashboard](Assets/Screenshot%202026-01-20%20161428.png) | ![Add Expense](Assets/Screenshot%202026-01-20%20161227.png) | ![Group Details](Assets/Screenshot%202026-01-20%20161523.png) |
 
 ### 💳 Settle & Notifications
-
-| Settle Up                             | Notifications                                 | Settings                            |
-| ------------------------------------- | --------------------------------------------- | ----------------------------------- |
-| ![Settle Up](Assets/05-settle-up.png) | ![Notifications](Assets/07-notifications.png) | ![Settings](Assets/06-settings.png) |
+| Settle Up | Notifications | Settings |
+|---|---|---|
+| ![Settle Up](Assets/Screenshot%202026-01-20%20161626.png) | ![Notifications](Assets/Screenshot%202026-01-20%20161715.png) | ![Settings](Assets/Screenshot%202026-01-20%20161655.png) |
 
 ---
 
@@ -241,31 +234,5 @@ Full Stack Developer — Premium UI Full Project ✨
 
 If you like this project, give it a ⭐ on GitHub ❤️
 
-````
-
----
-
-# ✅ Agar tu rename nahi karega (original filenames)
-Toh main ye bhi de deta hoon — direct current screenshot names ke path se.
-
-Bas ye screenshots section replace kar dena:
-
-```md
-## 📸 Screenshots (Premium UI)
-
-### 🌐 Public Pages
-| Landing Page | Login | Signup |
-|---|---|---|
-| ![Landing](Assets/Screenshot%202026-01-20%20160346.png) | ![Login](Assets/Screenshot%202026-01-20%20162047.png) | ![Signup](Assets/Screenshot%202026-01-20%20162103.png) |
-
-### 📊 App Pages
-| Dashboard | Add Expense | Group Details |
-|---|---|---|
-| ![Dashboard](Assets/Screenshot%202026-01-20%20161428.png) | ![Add Expense](Assets/Screenshot%202026-01-20%20161227.png) | ![Group Details](Assets/Screenshot%202026-01-20%20161523.png) |
-
-### 💳 Settle & Notifications
-| Settle Up | Notifications | Settings |
-|---|---|---|
-| ![Settle Up](Assets/Screenshot%202026-01-20%20161626.png) | ![Notifications](Assets/Screenshot%202026-01-20%20161715.png) | ![Settings](Assets/Screenshot%202026-01-20%20161655.png) |
 ````
 
