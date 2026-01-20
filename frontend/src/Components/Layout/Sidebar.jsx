@@ -66,11 +66,16 @@ const Sidebar = ({ onItemClick }) => {
           "linear-gradient(180deg, rgba(239,242,255,0.95) 0%, rgba(238,242,255,0.65) 55%, rgba(241,245,249,0.55) 100%)",
         display: "flex",
         flexDirection: "column",
+
+        // ✅ IMPORTANT: prevent mobile overflow / right side cut
+        width: "100%",
+        maxWidth: "100%",
+        overflowX: "hidden",
       }}
     >
       {/* Brand */}
       <Box sx={{ px: 1, pb: 1.8 }}>
-        <Box sx={{ display: "flex", gap: 1.1, alignItems: "center" }}>
+        <Box sx={{ display: "flex", gap: 1.1, align_toggle: "center", alignItems: "center" }}>
           <Box
             sx={{
               width: 40,
@@ -82,12 +87,23 @@ const Sidebar = ({ onItemClick }) => {
               placeItems: "center",
               fontWeight: 900,
               color: "#2563eb",
+              flexShrink: 0,
             }}
           >
             ▮▮
           </Box>
 
-          <Typography sx={{ fontWeight: 900, fontSize: 18, color: "#0f172a" }}>
+          <Typography
+            sx={{
+              fontWeight: 900,
+              fontSize: 18,
+              color: "#0f172a",
+              lineHeight: 1.1,
+              whiteSpace: "nowrap",
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+            }}
+          >
             Expense <span style={{ color: "#2563eb" }}>Splitter</span>
           </Typography>
         </Box>
@@ -119,7 +135,7 @@ const Sidebar = ({ onItemClick }) => {
                 mb: 1,
                 borderRadius: 4,
                 px: 1.6,
-                py: 1.3,
+                py: 1.25,
                 transition: "0.18s",
                 bgcolor: active ? alpha("#2563eb", 0.18) : "transparent",
                 border: active
@@ -132,10 +148,18 @@ const Sidebar = ({ onItemClick }) => {
                 },
               }}
             >
+              {/* ✅ ICON CONSISTENCY FIX */}
               <ListItemIcon
                 sx={{
-                  minWidth: 46,
+                  minWidth: 44,
+                  display: "grid",
+                  placeItems: "center",
                   color: active ? "#2563eb" : alpha("#0f172a", 0.6),
+
+                  // ✅ make all icons same size
+                  "& svg": {
+                    fontSize: 22,
+                  },
                 }}
               >
                 {item.icon}
@@ -163,14 +187,24 @@ const Sidebar = ({ onItemClick }) => {
             bgcolor: "rgba(255,255,255,0.55)",
             border: "1px solid rgba(226,232,240,0.9)",
             boxShadow: "0 14px 35px rgba(2,6,23,0.10)",
+            overflow: "hidden",
           }}
         >
           <Box sx={{ display: "flex", gap: 1.2, alignItems: "center" }}>
-            <Avatar sx={{ width: 44, height: 44 }}>{avatarLetter}</Avatar>
+            <Avatar sx={{ width: 44, height: 44, flexShrink: 0 }}>
+              {avatarLetter}
+            </Avatar>
 
             <Box sx={{ flex: 1, overflow: "hidden" }}>
               <Typography
-                sx={{ fontSize: 14, fontWeight: 900, lineHeight: 1.2 }}
+                sx={{
+                  fontSize: 14,
+                  fontWeight: 900,
+                  lineHeight: 1.2,
+                  whiteSpace: "nowrap",
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                }}
               >
                 {displayName}
               </Typography>
@@ -198,9 +232,18 @@ const Sidebar = ({ onItemClick }) => {
               "&:hover": { bgcolor: alpha("#0f172a", 0.08) },
             }}
           >
-            <ListItemIcon sx={{ color: alpha("#0f172a", 0.7), minWidth: 46 }}>
+            <ListItemIcon
+              sx={{
+                minWidth: 44,
+                display: "grid",
+                placeItems: "center",
+                color: alpha("#0f172a", 0.7),
+                "& svg": { fontSize: 22 },
+              }}
+            >
               <LogoutIcon />
             </ListItemIcon>
+
             <ListItemText
               primary="Logout"
               primaryTypographyProps={{

@@ -8,12 +8,11 @@ import { alpha } from "@mui/material/styles";
 const NotificationBell = () => {
   const navigate = useNavigate();
   const [count, setCount] = useState(0);
-
   const intervalRef = useRef(null);
 
   const loadCount = async () => {
     try {
-      const c = await getUnreadCount(); // ✅ GET /notifications/unread-count
+      const c = await getUnreadCount();
       setCount(Number(c || 0));
     } catch (err) {
       setCount(0);
@@ -36,29 +35,51 @@ const NotificationBell = () => {
     };
   }, []);
 
+  const displayCount = count > 99 ? "99+" : count;
+
   return (
     <Tooltip title="Notifications">
       <IconButton
         onClick={() => navigate("/notifications")}
         sx={{
+          width: 42,
+          height: 42,
           borderRadius: 3,
-          border: `1px solid ${alpha("#0f172a", 0.10)}`,
-          bgcolor: alpha("#ffffff", 0.55),
-          "&:hover": { bgcolor: alpha("#ffffff", 0.70) },
+          bgcolor: alpha("#0f172a", 0.04),
+          border: `1px solid ${alpha("#0f172a", 0.08)}`,
+          boxShadow: "0 12px 22px rgba(2,6,23,0.06)",
+          transition: "0.18s",
+          flexShrink: 0,
+          "&:hover": {
+            bgcolor: alpha("#0f172a", 0.06),
+            transform: "translateY(-1px)",
+          },
+          "&:active": { transform: "translateY(0px)" },
         }}
       >
         <Badge
-          badgeContent={count}
+          badgeContent={displayCount}
           color="error"
           overlap="circular"
           sx={{
             "& .MuiBadge-badge": {
               fontWeight: 900,
-              boxShadow: "0 10px 25px rgba(0,0,0,0.20)",
+              fontSize: 11,
+              minWidth: 18,
+              height: 18,
+              borderRadius: 999,
+              border: "2px solid white",
+              boxShadow: "0 10px 20px rgba(0,0,0,0.18)",
+              px: 0.6,
             },
           }}
         >
-          <NotificationsNoneOutlinedIcon />
+          <NotificationsNoneOutlinedIcon
+            sx={{
+              fontSize: 24,
+              color: alpha("#0f172a", 0.78),
+            }}
+          />
         </Badge>
       </IconButton>
     </Tooltip>

@@ -8,7 +8,9 @@ import {
   TextField,
   Divider,
   Alert,
+  useMediaQuery,
 } from "@mui/material";
+import { useTheme } from "@mui/material/styles";
 
 /**
  * members: [{_id, fullName, email}]
@@ -18,30 +20,20 @@ import {
  * onChange({ selectedUsers, splitDetails, isValid, error })
  */
 
-const SplitEditor = ({ members = [], amount = 0, splitType = "equal", onChange,initialSplitDetails = [] }) => {
+const SplitEditor = ({
+  members = [],
+  amount = 0,
+  splitType = "equal",
+  onChange,
+  initialSplitDetails = [],
+}) => {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
+
   const memberIds = useMemo(
     () => members.map((m) => m._id || m.userId),
     [members]
   );
-
-useEffect(() => {
-  if (!initialSplitDetails?.length) return;
-
-  const selectedUsers = initialSplitDetails.map((s) => s.user);
-  setSelected(selectedUsers);
-
-  const exactMap = {};
-  const percentMap = {};
-
-  initialSplitDetails.forEach((s) => {
-    if (splitType === "exact") exactMap[s.user] = s.amount;
-    if (splitType === "percentage") percentMap[s.user] = s.percent;
-  });
-
-  setExact(exactMap);
-  setPercent(percentMap);
-}, [JSON.stringify(initialSplitDetails), splitType]);
-
 
   // ✅ by default: all selected
   const [selected, setSelected] = useState(memberIds);
@@ -59,15 +51,34 @@ useEffect(() => {
     setSelected(memberIds);
   }, [memberIds.join(",")]);
 
-  const selectedMembers = useMemo(
-    () => members.filter((m) => selected.includes(m._id || m.userId)),
-    [members, selected]
-  );
+  // ✅ Prefill when editing expense
+  useEffect(() => {
+    if (!initialSplitDetails?.length) return;
+
+    const selectedUsers = initialSplitDetails.map((s) => s.user);
+    setSelected(selectedUsers);
+
+    const exactMap = {};
+    const percentMap = {};
+
+    initialSplitDetails.forEach((s) => {
+      if (splitType === "exact") exactMap[s.user] = s.amount;
+      if (splitType === "percentage") percentMap[s.user] = s.percent;
+    });
+
+    setExact(exactMap);
+    setPercent(percentMap);
+    // eslint-disable-next-line
+  }, [JSON.stringify(initialSplitDetails), splitType]);
 
   // ✅ helper: build splitDetails
   const buildSplitDetails = () => {
     if (!selected.length) {
-      return { isValid: false, error: "Select at least 1 member", splitDetails: [] };
+      return {
+        isValid: false,
+        error: "Select at least 1 member",
+        splitDetails: [],
+      };
     }
 
     if (!totalAmount || totalAmount <= 0) {
@@ -86,8 +97,11 @@ useEffect(() => {
 
       // fix last rounding
       let sum = 0;
-      for (let i = 0; i < splitDetails.length - 1; i++) sum += splitDetails[i].amount;
-      splitDetails[splitDetails.length - 1].amount = +(totalAmount - sum).toFixed(2);
+      for (let i = 0; i < splitDetails.length - 1; i++)
+        sum += splitDetails[i].amount;
+      splitDetails[splitDetails.length - 1].amount = +(
+        totalAmount - sum
+      ).toFixed(2);
 
       return { isValid: true, error: "", splitDetails };
     }
@@ -96,14 +110,20 @@ useEffect(() => {
     if (splitType === "exact") {
       const splitDetails = selected.map((uid) => ({
         user: uid,
-        amount: +(Number(exact[uid] || 0)).toFixed(2),
+        amount: +Number(exact[uid] || 0).toFixed(2),
       }));
 
-      const sum = +splitDetails.reduce((acc, s) => acc + s.amount, 0).toFixed(2);
+      const sum = +splitDetails
+        .reduce((acc, s) => acc + s.amount, 0)
+        .toFixed(2);
       const tot = +totalAmount.toFixed(2);
 
       if (sum !== tot) {
-        return { isValid: false, error: `Exact sum must be ₹${tot} (current ₹${sum})`, splitDetails };
+        return {
+          isValid: false,
+          error: `Exact sum must be ₹${tot} (current ₹${sum})`,
+          splitDetails,
+        };
       }
       return { isValid: true, error: "", splitDetails };
     }
@@ -112,13 +132,19 @@ useEffect(() => {
     if (splitType === "percentage") {
       const splitDetails = selected.map((uid) => ({
         user: uid,
-        percent: +(Number(percent[uid] || 0)).toFixed(2),
+        percent: +Number(percent[uid] || 0).toFixed(2),
       }));
 
-      const totalP = +splitDetails.reduce((acc, s) => acc + s.percent, 0).toFixed(2);
+      const totalP = +splitDetails
+        .reduce((acc, s) => acc + s.percent, 0)
+        .toFixed(2);
 
       if (totalP !== 100) {
-        return { isValid: false, error: `Total % must be 100 (current ${totalP}%)`, splitDetails };
+        return {
+          isValid: false,
+          error: `Total % must be 100 (current ${totalP}%)`,
+          splitDetails,
+        };
       }
 
       // compute amount
@@ -129,8 +155,11 @@ useEffect(() => {
 
       // fix last rounding
       let sum = 0;
-      for (let i = 0; i < withAmount.length - 1; i++) sum += withAmount[i].amount;
-      withAmount[withAmount.length - 1].amount = +(totalAmount - sum).toFixed(2);
+      for (let i = 0; i < withAmount.length - 1; i++)
+        sum += withAmount[i].amount;
+      withAmount[withAmount.length - 1].amount = +(
+        totalAmount - sum
+      ).toFixed(2);
 
       return { isValid: true, error: "", splitDetails: withAmount };
     }
@@ -148,7 +177,13 @@ useEffect(() => {
       error: res.error,
     });
     // eslint-disable-next-line
-  }, [selected.join(","), JSON.stringify(exact), JSON.stringify(percent), totalAmount, splitType]);
+  }, [
+    selected.join(","),
+    JSON.stringify(exact),
+    JSON.stringify(percent),
+    totalAmount,
+    splitType,
+  ]);
 
   const toggleUser = (uid) => {
     setSelected((prev) =>
@@ -159,12 +194,12 @@ useEffect(() => {
   const { isValid, error } = buildSplitDetails();
 
   return (
-    <Box>
+    <Box sx={{ width: "100%", maxWidth: "100%", overflowX: "hidden" }}>
       <Typography fontWeight={900} sx={{ mb: 1 }}>
         Split Between
       </Typography>
 
-      <Stack spacing={0.5}>
+      <Stack spacing={0.8}>
         {members.map((m) => {
           const uid = m._id || m.userId;
           const checked = selected.includes(uid);
@@ -173,32 +208,86 @@ useEffect(() => {
             <Box
               key={uid}
               sx={{
-                p: 1,
-                borderRadius: 2,
+                p: 1.1,
+                borderRadius: 2.6,
                 border: "1px solid rgba(0,0,0,0.08)",
+                width: "100%",
+                maxWidth: "100%",
+                overflow: "hidden",
               }}
             >
-              <Stack direction="row" justifyContent="space-between" alignItems="center">
-                <FormControlLabel
-                  control={<Checkbox checked={checked} onChange={() => toggleUser(uid)} />}
-                  label={
-                    <Typography fontWeight={700}>
-                      {m.fullName || m.email}
-                    </Typography>
-                  }
-                />
+              {/* ✅ MOBILE FIX: layout becomes column */}
+              <Stack
+                direction={{ xs: "column", sm: "row" }}
+                justifyContent="space-between"
+                alignItems={{ xs: "stretch", sm: "center" }}
+                spacing={{ xs: 1, sm: 2 }}
+                sx={{ minWidth: 0 }}
+              >
+                {/* Left checkbox */}
+                <Box sx={{ minWidth: 0 }}>
+                  <FormControlLabel
+                    control={
+                      <Checkbox
+                        checked={checked}
+                        onChange={() => toggleUser(uid)}
+                      />
+                    }
+                    sx={{
+                      m: 0,
+                      alignItems: "flex-start",
+                      "& .MuiFormControlLabel-label": {
+                        width: "100%",
+                      },
+                    }}
+                    label={
+                      <Box sx={{ minWidth: 0 }}>
+                        <Typography
+                          fontWeight={800}
+                          sx={{
+                            fontSize: 14,
+                            maxWidth: "100%",
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                            whiteSpace: "nowrap",
+                          }}
+                        >
+                          {m.fullName || "Member"}
+                        </Typography>
 
-                {/* extra inputs */}
+                        <Typography
+                          sx={{
+                            fontSize: 12,
+                            color: "text.secondary",
+                            maxWidth: "100%",
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                            whiteSpace: "nowrap",
+                          }}
+                        >
+                          {m.email || ""}
+                        </Typography>
+                      </Box>
+                    }
+                  />
+                </Box>
+
+                {/* Right input */}
                 {checked && splitType === "exact" && (
                   <TextField
                     size="small"
                     type="number"
-                    label="₹"
+                    label="₹ Amount"
                     value={exact[uid] ?? ""}
                     onChange={(e) =>
                       setExact((p) => ({ ...p, [uid]: e.target.value }))
                     }
-                    sx={{ width: 120 }}
+                    fullWidth={isMobile}
+                    sx={{
+                      width: { xs: "100%", sm: 160 },
+                      flexShrink: 0,
+                    }}
+                    inputProps={{ min: 0 }}
                   />
                 )}
 
@@ -206,12 +295,17 @@ useEffect(() => {
                   <TextField
                     size="small"
                     type="number"
-                    label="%"
+                    label="% Share"
                     value={percent[uid] ?? ""}
                     onChange={(e) =>
                       setPercent((p) => ({ ...p, [uid]: e.target.value }))
                     }
-                    sx={{ width: 120 }}
+                    fullWidth={isMobile}
+                    sx={{
+                      width: { xs: "100%", sm: 160 },
+                      flexShrink: 0,
+                    }}
+                    inputProps={{ min: 0, max: 100 }}
                   />
                 )}
               </Stack>
@@ -220,10 +314,12 @@ useEffect(() => {
         })}
       </Stack>
 
-      <Divider sx={{ my: 1.5 }} />
+      <Divider sx={{ my: 1.6 }} />
 
       {!isValid && (
-        <Alert severity="warning">{error}</Alert>
+        <Alert severity="warning" sx={{ borderRadius: 3 }}>
+          {error}
+        </Alert>
       )}
     </Box>
   );

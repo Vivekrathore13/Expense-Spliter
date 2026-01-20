@@ -23,15 +23,12 @@ import axiosInstance from "../../services/axiosinstance";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 
-// ✅ MODAL IMPORT
 import CreateGroupModal from "../Dashboard/CreateGroupModal";
 
 const GroupsPage = () => {
   const [loading, setLoading] = useState(true);
   const [groups, setGroups] = useState([]);
   const [search, setSearch] = useState("");
-
-  // ✅ create modal state
   const [openCreate, setOpenCreate] = useState(false);
 
   const navigate = useNavigate();
@@ -70,12 +67,22 @@ const GroupsPage = () => {
   );
 
   return (
-    <Box sx={{ p: 2 }}>
-      {/* ✅ Header Premium (same design) */}
+    <Box
+      sx={{
+        width: "100%",
+        maxWidth: "min(1120px, 100%)",
+        mx: "auto",
+        overflowX: "clip",
+
+        // ✅ IMPORTANT: AppLayout already gives padding. don’t add heavy padding here.
+        p: { xs: 0, sm: 0.4, md: 0 },
+      }}
+    >
+      {/* ✅ Header Premium */}
       <Card
         sx={{
           mb: 2,
-          p: 2.3,
+          p: { xs: 1.6, md: 2.3 },
           borderRadius: 4,
           position: "relative",
           overflow: "hidden",
@@ -100,21 +107,22 @@ const GroupsPage = () => {
           spacing={2}
           justifyContent="space-between"
           alignItems={{ xs: "stretch", md: "center" }}
-          sx={{ position: "relative" }}
+          sx={{ position: "relative", minWidth: 0 }}
         >
-          <Box>
+          <Box sx={{ minWidth: 0 }}>
             <Stack direction="row" spacing={1} alignItems="center">
               <Avatar
                 sx={{
                   bgcolor: "rgba(37,99,235,0.18)",
                   color: "#1d4ed8",
                   fontWeight: 900,
+                  flexShrink: 0,
                 }}
               >
                 <GroupsIcon />
               </Avatar>
 
-              <Box>
+              <Box sx={{ minWidth: 0 }}>
                 <Typography variant="h5" fontWeight={900}>
                   Groups
                 </Typography>
@@ -160,11 +168,15 @@ const GroupsPage = () => {
               }}
             />
 
-            {/* ✅ FIXED BUTTON */}
             <Button
               variant="contained"
               startIcon={<AddIcon />}
-              sx={{ borderRadius: 3.2, fontWeight: 900, px: 2 }}
+              sx={{
+                borderRadius: 3.2,
+                fontWeight: 900,
+                px: 2,
+                width: { xs: "100%", sm: "auto" },
+              }}
               onClick={() => setOpenCreate(true)}
             >
               Create Group
@@ -173,13 +185,16 @@ const GroupsPage = () => {
         </Stack>
       </Card>
 
-      {/* ✅ Loading (Skeleton feel) */}
+      {/* ✅ Loading */}
       {loading ? (
         <Box
           sx={{
             display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))",
+
+            // ✅ MOBILE SAFE: 240 is safer than 280
+            gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
             gap: 2,
+            width: "100%",
           }}
         >
           {Array.from({ length: 6 }).map((_, i) => (
@@ -189,11 +204,12 @@ const GroupsPage = () => {
                 p: 2.2,
                 borderRadius: 4,
                 border: "1px solid rgba(0,0,0,0.06)",
+                overflow: "hidden",
               }}
             >
               <Stack direction="row" spacing={1.5} alignItems="center">
                 <Skeleton variant="circular" width={42} height={42} />
-                <Box sx={{ flex: 1 }}>
+                <Box sx={{ flex: 1, minWidth: 0 }}>
                   <Skeleton height={22} width="70%" />
                   <Skeleton height={18} width="45%" />
                 </Box>
@@ -210,10 +226,9 @@ const GroupsPage = () => {
           ))}
         </Box>
       ) : !filteredGroups.length ? (
-        /* ✅ Empty state Premium */
         <Card
           sx={{
-            p: 4,
+            p: { xs: 3, md: 4 },
             borderRadius: 4,
             textAlign: "center",
             border: "1px dashed rgba(0,0,0,0.25)",
@@ -227,7 +242,6 @@ const GroupsPage = () => {
             Create your first group and invite friends to split expenses.
           </Typography>
 
-          {/* ✅ FIXED BUTTON */}
           <Button
             variant="contained"
             sx={{ mt: 2, borderRadius: 3, fontWeight: 900 }}
@@ -238,12 +252,13 @@ const GroupsPage = () => {
           </Button>
         </Card>
       ) : (
-        /* ✅ Groups grid Premium */
         <Box
           sx={{
             display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
+            gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
             gap: 2,
+            width: "100%",
+            overflowX: "clip",
           }}
         >
           {filteredGroups.map((g) => {
@@ -262,6 +277,7 @@ const GroupsPage = () => {
                   position: "relative",
                   overflow: "hidden",
                   transition: "0.25s",
+                  minWidth: 0,
                   "&:hover": {
                     transform: "translateY(-3px)",
                     boxShadow: "0 18px 45px rgba(0,0,0,0.10)",
@@ -270,7 +286,6 @@ const GroupsPage = () => {
                 }}
                 onClick={() => navigate(`/group/${g._id}`)}
               >
-                {/* top gradient line */}
                 <Box
                   sx={{
                     position: "absolute",
@@ -284,7 +299,7 @@ const GroupsPage = () => {
                 />
 
                 <Stack direction="row" spacing={1.5} alignItems="center">
-                  <Avatar sx={{ fontWeight: 900 }}>
+                  <Avatar sx={{ fontWeight: 900, flexShrink: 0 }}>
                     {name?.[0]?.toUpperCase()}
                   </Avatar>
 
@@ -320,6 +335,7 @@ const GroupsPage = () => {
                   direction="row"
                   justifyContent="space-between"
                   alignItems="center"
+                  sx={{ gap: 1 }}
                 >
                   <Typography sx={{ color: "text.secondary", fontSize: 13 }}>
                     Expenses • Balances • Settlements
@@ -327,7 +343,7 @@ const GroupsPage = () => {
 
                   <Tooltip title="Open group">
                     <Chip
-                      icon={<ArrowForwardIosIcon />}
+                      icon={<ArrowForwardIosIcon fontSize="small" />} // ✅ icon consistent
                       label="Open"
                       color="primary"
                       variant="outlined"
@@ -345,19 +361,18 @@ const GroupsPage = () => {
         </Box>
       )}
 
-      {/* ✅ IMPORTANT: MODAL should be outside map */}
-   <CreateGroupModal
-  open={openCreate}
-  onClose={() => setOpenCreate(false)}
-  onCreated={async (createdGroup) => {
-    await fetchGroups();
-    setOpenCreate(false);
+      {/* ✅ Modal */}
+      <CreateGroupModal
+        open={openCreate}
+        onClose={() => setOpenCreate(false)}
+        onCreated={async (createdGroup) => {
+          await fetchGroups();
+          setOpenCreate(false);
 
-    const gid = createdGroup?._id || createdGroup?.id;
-    if (gid) navigate(`/group/${gid}`);
-  }}
-/>
-
+          const gid = createdGroup?._id || createdGroup?.id;
+          if (gid) navigate(`/group/${gid}`);
+        }}
+      />
     </Box>
   );
 };

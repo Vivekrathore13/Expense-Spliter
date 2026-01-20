@@ -19,7 +19,6 @@ import TrendingUpIcon from "@mui/icons-material/TrendingUp";
 import ChevronRightIcon from "@mui/icons-material/ChevronRight";
 import PersonIcon from "@mui/icons-material/Person";
 import MailOutlineIcon from "@mui/icons-material/MailOutline";
-// import  CircularProgress  from "@mui/material";
 
 import { alpha } from "@mui/material/styles";
 import { motion } from "framer-motion";
@@ -79,7 +78,6 @@ const useCountUp = (target = 0, duration = 750) => {
 
     const tick = (now) => {
       const progress = Math.min((now - start) / duration, 1);
-      // ✅ easeOutCubic
       const eased = 1 - Math.pow(1 - progress, 3);
       const current = Math.round(startVal + (end - startVal) * eased);
 
@@ -124,7 +122,7 @@ const Dashboard = () => {
   const formatINR = useMemo(() => {
     return (num) =>
       new Intl.NumberFormat("en-IN", { maximumFractionDigits: 0 }).format(
-        Number(num || 0),
+        Number(num || 0)
       );
   }, []);
 
@@ -179,7 +177,7 @@ const Dashboard = () => {
 
       if (fixedCount > 0) {
         toast.success(`✅ Fixed ${fixedCount} old invites`);
-        fetchSentInvites(); // refresh list
+        fetchSentInvites();
       } else {
         toast.info("No old pending invites to fix 🙂");
       }
@@ -191,11 +189,7 @@ const Dashboard = () => {
   };
 
   const loadDashboard = async () => {
-    await Promise.all([
-      loadGroups(),
-      fetchDashboardSummary(),
-      fetchSentInvites(),
-    ]);
+    await Promise.all([loadGroups(), fetchDashboardSummary(), fetchSentInvites()]);
   };
 
   useEffect(() => {
@@ -209,18 +203,9 @@ const Dashboard = () => {
   }, [summary?.youOweTotal, summary?.youGetBackTotal]);
 
   // ✅ Animated numbers (safe + lightweight)
-  const animTotalBalance = useCountUp(
-    loadingSummary ? 0 : Math.abs(totalBalance),
-    750,
-  );
-  const animYouOwe = useCountUp(
-    loadingSummary ? 0 : summary?.youOweTotal || 0,
-    750,
-  );
-  const animYouGet = useCountUp(
-    loadingSummary ? 0 : summary?.youGetBackTotal || 0,
-    750,
-  );
+  const animTotalBalance = useCountUp(loadingSummary ? 0 : Math.abs(totalBalance), 750);
+  const animYouOwe = useCountUp(loadingSummary ? 0 : summary?.youOweTotal || 0, 750);
+  const animYouGet = useCountUp(loadingSummary ? 0 : summary?.youGetBackTotal || 0, 750);
 
   // ✅ Soft text palette
   const COLORS = {
@@ -237,6 +222,7 @@ const Dashboard = () => {
         bgcolor: "rgba(255,255,255,0.88)",
         border: "1px solid rgba(226,232,240,0.95)",
         boxShadow: "0 14px 40px rgba(2,6,23,0.08)",
+        overflow: "hidden", // ✅ important
         ...sx,
       }}
     >
@@ -247,7 +233,7 @@ const Dashboard = () => {
   const StatCard = ({ icon, iconBg, iconColor, label, value, valueColor }) => (
     <SoftCard sx={{ height: "100%" }}>
       <CardContent sx={{ p: { xs: 2, md: 2.2 } }}>
-        <Stack direction="row" spacing={1.8} alignItems="center">
+        <Stack direction="row" spacing={1.8} alignItems="center" sx={{ minWidth: 0 }}>
           <Avatar
             sx={{
               bgcolor: iconBg,
@@ -255,25 +241,27 @@ const Dashboard = () => {
               width: 56,
               height: 56,
               fontWeight: 900,
+              flexShrink: 0,
             }}
           >
             {icon}
           </Avatar>
 
-          <Box>
-            <Typography
-              sx={{ fontWeight: 900, fontSize: 14, color: COLORS.muted }}
-            >
+          <Box sx={{ minWidth: 0 }}>
+            <Typography sx={{ fontWeight: 900, fontSize: 14, color: COLORS.muted }}>
               {label}
             </Typography>
 
             <Typography
               sx={{
                 fontWeight: 900,
-                fontSize: { xs: 28, md: 32 },
+                fontSize: { xs: 26, md: 32 }, // ✅ smaller on mobile
                 mt: 0.2,
                 color: valueColor,
                 lineHeight: 1.1,
+                whiteSpace: "nowrap",
+                overflow: "hidden",
+                textOverflow: "ellipsis",
               }}
             >
               {value}
@@ -300,6 +288,7 @@ const Dashboard = () => {
           border: `1px solid ${
             isPending ? "rgba(245,158,11,0.30)" : "rgba(34,197,94,0.25)"
           }`,
+          flexShrink: 0,
         }}
       />
     );
@@ -311,10 +300,16 @@ const Dashboard = () => {
       animate="show"
       variants={container}
       sx={{
+        width: "100%",
         maxWidth: 1120,
         mx: "auto",
-        px: { xs: 1.2, sm: 2, md: 0 }, // ✅ MOBILE padding
-        pb: { xs: 3, md: 0 }, // ✅ bottom gap
+
+        // ✅ the REAL mobile overflow fix
+        maxWidth: "min(1120px, 100%)",
+        overflowX: "hidden",
+
+        px: { xs: 0.8, sm: 1.4, md: 0 }, // ✅ reduce (AppLayout already has padding)
+        pb: { xs: 3, md: 0 },
       }}
     >
       {/* ✅ Welcome header */}
@@ -322,7 +317,7 @@ const Dashboard = () => {
         <Stack sx={{ mb: 2.6 }}>
           <Typography
             sx={{
-              fontSize: { xs: 30, md: 44 },
+              fontSize: { xs: 28, md: 44 },
               fontWeight: 900,
               color: COLORS.heading,
               letterSpacing: "-0.03em",
@@ -337,11 +332,11 @@ const Dashboard = () => {
         </Stack>
       </MotionBox>
 
-      {/* ✅ Summary cards (stagger) */}
+      {/* ✅ Summary cards */}
       <MotionBox variants={fadeUp}>
-        <Grid container spacing={{ xs: 1.6, md: 2.4 }}>
+        <Grid container spacing={{ xs: 1.4, md: 2.4 }}>
           {[1, 2, 3].map((n) => (
-            <Grid key={n} item xs={12} md={4}>
+            <Grid key={n} item xs={12} md={4} sx={{ minWidth: 0 }}>
               <MotionBox
                 initial={{ opacity: 0, y: 18 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -387,24 +382,19 @@ const Dashboard = () => {
       </MotionBox>
 
       {/* ✅ Lower section */}
-      <Grid container spacing={2.4}>
+      <Grid container spacing={{ xs: 1.6, md: 2.4 }} sx={{ mt: { xs: 0.4, md: 0.8 } }}>
         {/* LEFT: Groups */}
-        <Grid item xs={12} md={5}>
+        <Grid item xs={12} md={5} sx={{ minWidth: 0 }}>
           <MotionBox variants={fadeLeft}>
             <SoftCard sx={{ height: "100%" }}>
               <CardContent sx={{ p: { xs: 2, md: 2.4 } }}>
                 <Stack
-                  direction="row"
+                  direction={{ xs: "column", sm: "row" }}
                   justifyContent="space-between"
-                  alignItems="center"
+                  alignItems={{ xs: "flex-start", sm: "center" }}
+                  gap={1.1}
                 >
-                  <Typography
-                    sx={{
-                      fontWeight: 900,
-                      fontSize: 18,
-                      color: COLORS.heading,
-                    }}
-                  >
+                  <Typography sx={{ fontWeight: 900, fontSize: 18, color: COLORS.heading }}>
                     Your Groups
                   </Typography>
 
@@ -419,6 +409,7 @@ const Dashboard = () => {
                       bgcolor: "rgba(37,99,235,0.10)",
                       color: "#2563eb",
                       "&:hover": { bgcolor: "rgba(37,99,235,0.14)" },
+                      width: { xs: "100%", sm: "auto" }, // ✅ mobile full width
                     }}
                   >
                     + Create Group
@@ -438,13 +429,9 @@ const Dashboard = () => {
                           border: "1px solid rgba(226,232,240,0.9)",
                         }}
                       >
-                        <Stack
-                          direction="row"
-                          spacing={1.4}
-                          alignItems="center"
-                        >
+                        <Stack direction="row" spacing={1.4} alignItems="center" sx={{ minWidth: 0 }}>
                           <Skeleton variant="circular" width={44} height={44} />
-                          <Box sx={{ flex: 1 }}>
+                          <Box sx={{ flex: 1, minWidth: 0 }}>
                             <Skeleton width="60%" height={18} />
                             <Skeleton width="40%" height={16} />
                           </Box>
@@ -458,11 +445,7 @@ const Dashboard = () => {
                     No groups found. Create your first group ✨
                   </Typography>
                 ) : (
-                  <MotionBox
-                    variants={listContainer}
-                    initial="hidden"
-                    animate="show"
-                  >
+                  <MotionBox variants={listContainer} initial="hidden" animate="show">
                     <Stack spacing={1.2}>
                       {groups.slice(0, 5).map((g, idx) => (
                         <MotionBox key={g._id} variants={listItem}>
@@ -477,6 +460,7 @@ const Dashboard = () => {
                                 borderRadius: 3,
                                 transition: "0.18s",
                                 cursor: "pointer",
+                                minWidth: 0,
                                 "&:hover": {
                                   bgcolor: alpha("#0f172a", 0.03),
                                   transform: "translateY(-1px)",
@@ -490,6 +474,7 @@ const Dashboard = () => {
                                   bgcolor: "rgba(37,99,235,0.12)",
                                   color: "#2563eb",
                                   fontWeight: 900,
+                                  flexShrink: 0,
                                 }}
                               >
                                 {(g.groupname || "G")[0]}
@@ -507,13 +492,7 @@ const Dashboard = () => {
                                 >
                                   {g.groupname}
                                 </Typography>
-                                <Typography
-                                  sx={{
-                                    fontSize: 13,
-                                    color: COLORS.muted,
-                                    fontWeight: 800,
-                                  }}
-                                >
+                                <Typography sx={{ fontSize: 13, color: COLORS.muted, fontWeight: 800 }}>
                                   {g.member?.length ?? 0} members
                                 </Typography>
                               </Box>
@@ -522,14 +501,15 @@ const Dashboard = () => {
                                 sx={{
                                   fontWeight: 900,
                                   color: "#16a34a",
-                                  minWidth: 70,
+                                  minWidth: 64,
                                   textAlign: "right",
+                                  flexShrink: 0,
                                 }}
                               >
                                 ₹{formatINR(g?.totalExpense || 0)}
                               </Typography>
 
-                              <ChevronRightIcon sx={{ opacity: 0.35 }} />
+                              <ChevronRightIcon sx={{ opacity: 0.35, flexShrink: 0 }} />
                             </Box>
 
                             {idx !== Math.min(groups.length, 5) - 1 && (
@@ -547,19 +527,13 @@ const Dashboard = () => {
         </Grid>
 
         {/* RIGHT: Activity + Invites */}
-        <Grid item xs={12} md={7}>
+        <Grid item xs={12} md={7} sx={{ minWidth: 0 }}>
           <MotionBox variants={fadeRight}>
             <Stack spacing={2.4}>
               {/* Recent Activity */}
               <SoftCard>
                 <CardContent sx={{ p: { xs: 2, md: 2.4 } }}>
-                  <Typography
-                    sx={{
-                      fontWeight: 900,
-                      fontSize: 18,
-                      color: COLORS.heading,
-                    }}
-                  >
+                  <Typography sx={{ fontWeight: 900, fontSize: 18, color: COLORS.heading }}>
                     Recent Activity
                   </Typography>
 
@@ -576,17 +550,9 @@ const Dashboard = () => {
                             border: "1px solid rgba(226,232,240,0.9)",
                           }}
                         >
-                          <Stack
-                            direction="row"
-                            spacing={1.4}
-                            alignItems="center"
-                          >
-                            <Skeleton
-                              variant="circular"
-                              width={44}
-                              height={44}
-                            />
-                            <Box sx={{ flex: 1 }}>
+                          <Stack direction="row" spacing={1.4} alignItems="center" sx={{ minWidth: 0 }}>
+                            <Skeleton variant="circular" width={44} height={44} />
+                            <Box sx={{ flex: 1, minWidth: 0 }}>
                               <Skeleton width="70%" height={18} />
                               <Skeleton width="45%" height={16} />
                             </Box>
@@ -596,17 +562,11 @@ const Dashboard = () => {
                       ))}
                     </Stack>
                   ) : !summary?.recentSettlements?.length ? (
-                    <Typography
-                      sx={{ opacity: 0.75, py: 2, color: COLORS.text }}
-                    >
+                    <Typography sx={{ opacity: 0.75, py: 2, color: COLORS.text }}>
                       No activity yet.
                     </Typography>
                   ) : (
-                    <MotionBox
-                      variants={listContainer}
-                      initial="hidden"
-                      animate="show"
-                    >
+                    <MotionBox variants={listContainer} initial="hidden" animate="show">
                       <Stack spacing={1.2}>
                         {summary.recentSettlements.slice(0, 4).map((s) => (
                           <MotionBox key={s.settlementId} variants={listItem}>
@@ -620,16 +580,13 @@ const Dashboard = () => {
                                 "&:hover": { transform: "translateY(-1px)" },
                               }}
                             >
-                              <Stack
-                                direction="row"
-                                spacing={1.3}
-                                alignItems="center"
-                              >
+                              <Stack direction="row" spacing={1.3} alignItems="center" sx={{ minWidth: 0 }}>
                                 <Avatar
                                   sx={{
                                     width: 44,
                                     height: 44,
                                     bgcolor: "rgba(148,163,184,0.20)",
+                                    flexShrink: 0,
                                   }}
                                 >
                                   <PersonIcon sx={{ opacity: 0.6 }} />
@@ -649,20 +606,12 @@ const Dashboard = () => {
                                     {s.fromName} settled with {s.toName}
                                   </Typography>
 
-                                  <Typography
-                                    sx={{
-                                      fontSize: 13,
-                                      color: COLORS.muted,
-                                      fontWeight: 800,
-                                    }}
-                                  >
+                                  <Typography sx={{ fontSize: 13, color: COLORS.muted, fontWeight: 800 }}>
                                     {s.groupName}
                                   </Typography>
                                 </Box>
 
-                                <Typography
-                                  sx={{ fontWeight: 900, color: "#2563eb" }}
-                                >
+                                <Typography sx={{ fontWeight: 900, color: "#2563eb", flexShrink: 0 }}>
                                   ₹{formatINR(s.amount)}
                                 </Typography>
                               </Stack>
@@ -681,86 +630,71 @@ const Dashboard = () => {
                   <Stack
                     direction={{ xs: "column", sm: "row" }}
                     justifyContent="space-between"
-                    alignItems={{ xs: "flex-start", sm: "center" }}
+                    alignItems={{ xs: "stretch", sm: "center" }}
                     gap={1.2}
                   >
-                    <Box>
-                      <Typography
-                        sx={{
-                          fontWeight: 900,
-                          fontSize: 18,
-                          color: COLORS.heading,
-                        }}
-                      >
+                    <Box sx={{ minWidth: 0 }}>
+                      <Typography sx={{ fontWeight: 900, fontSize: 18, color: COLORS.heading }}>
                         Invitations
                       </Typography>
-                      <Typography
-                        sx={{
-                          fontSize: 13,
-                          color: COLORS.text,
-                          fontWeight: 800,
-                        }}
-                      >
+                      <Typography sx={{ fontSize: 13, color: COLORS.text, fontWeight: 800 }}>
                         Manage invited members (email + group + status)
                       </Typography>
                     </Box>
 
-                    <Button
-                      startIcon={<MailOutlineIcon />}
-                      onClick={() => setOpenInvite(true)}
-                      sx={{
-                        borderRadius: 999,
-                        textTransform: "none",
-                        fontWeight: 900,
-                        px: 2.2,
-                        py: 0.9,
-                        bgcolor: "rgba(37,99,235,0.10)",
-                        color: "#2563eb",
-                        "&:hover": { bgcolor: "rgba(37,99,235,0.14)" },
-                      }}
-                    >
-                      Invite Member
-                    </Button>
-                    <Button
-                      onClick={handleFixOldInvites}
-                      disabled={fixLoading || loadingInvites}
-                      sx={{
-                        borderRadius: 999,
-                        textTransform: "none",
-                        fontWeight: 900,
-                        px: 2.2,
-                        py: 0.9,
-                        bgcolor: "rgba(15,23,42,0.06)",
-                        color: "rgba(15,23,42,0.75)",
-                        transition: "0.2s",
-                        "&:hover": {
-                          bgcolor: "rgba(15,23,42,0.10)",
-                          transform: "translateY(-1px)",
-                        },
-                        "&:active": {
-                          transform: "translateY(0px)",
-                        },
-                        "&.Mui-disabled": {
-                          opacity: 0.6,
-                          color: "rgba(15,23,42,0.55)",
-                        },
-                      }}
-                    >
-                      {fixLoading ? (
-                        <span
-                          style={{
-                            display: "flex",
-                            alignItems: "center",
-                            gap: 8,
-                          }}
-                        >
-                          <CircularProgress size={18} />
-                          Fixing...
-                        </span>
-                      ) : (
-                        "Fix Pending"
-                      )}
-                    </Button>
+                    <Stack direction={{ xs: "column", sm: "row" }} gap={1.1} sx={{ width: { xs: "100%", sm: "auto" } }}>
+                      <Button
+                        startIcon={<MailOutlineIcon />}
+                        onClick={() => setOpenInvite(true)}
+                        sx={{
+                          borderRadius: 999,
+                          textTransform: "none",
+                          fontWeight: 900,
+                          px: 2.2,
+                          py: 0.9,
+                          bgcolor: "rgba(37,99,235,0.10)",
+                          color: "#2563eb",
+                          "&:hover": { bgcolor: "rgba(37,99,235,0.14)" },
+                          width: { xs: "100%", sm: "auto" },
+                        }}
+                      >
+                        Invite Member
+                      </Button>
+
+                      <Button
+                        onClick={handleFixOldInvites}
+                        disabled={fixLoading || loadingInvites}
+                        sx={{
+                          borderRadius: 999,
+                          textTransform: "none",
+                          fontWeight: 900,
+                          px: 2.2,
+                          py: 0.9,
+                          bgcolor: "rgba(15,23,42,0.06)",
+                          color: "rgba(15,23,42,0.75)",
+                          transition: "0.2s",
+                          "&:hover": {
+                            bgcolor: "rgba(15,23,42,0.10)",
+                            transform: "translateY(-1px)",
+                          },
+                          "&:active": { transform: "translateY(0px)" },
+                          "&.Mui-disabled": {
+                            opacity: 0.6,
+                            color: "rgba(15,23,42,0.55)",
+                          },
+                          width: { xs: "100%", sm: "auto" },
+                        }}
+                      >
+                        {fixLoading ? (
+                          <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                            <CircularProgress size={18} />
+                            Fixing...
+                          </span>
+                        ) : (
+                          "Fix Pending"
+                        )}
+                      </Button>
+                    </Stack>
                   </Stack>
 
                   <Divider sx={{ opacity: 0.6, my: 1.6 }} />
@@ -776,17 +710,9 @@ const Dashboard = () => {
                             border: "1px solid rgba(226,232,240,0.9)",
                           }}
                         >
-                          <Stack
-                            direction="row"
-                            spacing={1.2}
-                            alignItems="center"
-                          >
-                            <Skeleton
-                              variant="circular"
-                              width={44}
-                              height={44}
-                            />
-                            <Box sx={{ flex: 1 }}>
+                          <Stack direction="row" spacing={1.2} alignItems="center" sx={{ minWidth: 0 }}>
+                            <Skeleton variant="circular" width={44} height={44} />
+                            <Box sx={{ flex: 1, minWidth: 0 }}>
                               <Skeleton width="45%" height={18} />
                               <Skeleton width="30%" height={16} />
                             </Box>
@@ -796,17 +722,11 @@ const Dashboard = () => {
                       ))}
                     </Stack>
                   ) : invites.length === 0 ? (
-                    <Typography
-                      sx={{ opacity: 0.78, py: 1.2, color: COLORS.text }}
-                    >
+                    <Typography sx={{ opacity: 0.78, py: 1.2, color: COLORS.text }}>
                       No invites sent yet. Invite members to join your groups ✅
                     </Typography>
                   ) : (
-                    <MotionBox
-                      variants={listContainer}
-                      initial="hidden"
-                      animate="show"
-                    >
+                    <MotionBox variants={listContainer} initial="hidden" animate="show">
                       <Stack spacing={1.2}>
                         {invites.slice(0, 4).map((inv) => (
                           <MotionBox key={inv._id} variants={listItem}>
@@ -820,6 +740,7 @@ const Dashboard = () => {
                                 alignItems: "center",
                                 gap: { xs: 1, md: 1.4 },
                                 transition: "0.18s",
+                                minWidth: 0,
                                 "&:hover": { transform: "translateY(-1px)" },
                               }}
                             >
@@ -830,6 +751,7 @@ const Dashboard = () => {
                                   bgcolor: "rgba(37,99,235,0.12)",
                                   color: "#2563eb",
                                   fontWeight: 900,
+                                  flexShrink: 0,
                                 }}
                               >
                                 {inv?.email?.[0]?.toUpperCase() || "U"}
@@ -843,19 +765,12 @@ const Dashboard = () => {
                                     whiteSpace: "nowrap",
                                     overflow: "hidden",
                                     textOverflow: "ellipsis",
-                                    maxWidth: { xs: 170, sm: 240, md: "100%" },
                                   }}
                                 >
                                   {inv.email}
                                 </Typography>
 
-                                <Typography
-                                  sx={{
-                                    fontSize: 13,
-                                    color: COLORS.muted,
-                                    fontWeight: 800,
-                                  }}
-                                >
+                                <Typography sx={{ fontSize: 13, color: COLORS.muted, fontWeight: 800 }}>
                                   Group: {inv.groupName || "—"}
                                 </Typography>
                               </Box>

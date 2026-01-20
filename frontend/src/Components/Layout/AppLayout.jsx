@@ -20,6 +20,11 @@ const AppLayout = () => {
       sx={{
         display: "flex",
         minHeight: "100vh",
+
+        // ✅ strongest mobile overflow prevention
+        width: "100%",
+        maxWidth: "100%",
+        overflowX: "clip", // ✅ better than hidden
       }}
     >
       <CssBaseline />
@@ -27,9 +32,12 @@ const AppLayout = () => {
       {/* Sidebar */}
       <Box
         component="nav"
-        sx={{ width: { md: drawerWidth }, flexShrink: { md: 0 } }}
+        sx={{
+          width: { md: drawerWidth },
+          flexShrink: { md: 0 },
+        }}
       >
-        {/* Mobile */}
+        {/* ✅ Mobile drawer */}
         <Drawer
           variant="temporary"
           open={mobileOpen}
@@ -38,20 +46,23 @@ const AppLayout = () => {
           sx={{
             display: { xs: "block", md: "none" },
             "& .MuiDrawer-paper": {
-              width: drawerWidth,
+              width: "min(280px, 86vw)",
+              maxWidth: "86vw",
               border: 0,
               bgcolor: "transparent",
               boxShadow: "none",
               p: 1,
+              overflowX: "hidden",
             },
           }}
         >
           <Sidebar onItemClick={() => setMobileOpen(false)} />
         </Drawer>
 
-        {/* Desktop */}
+        {/* ✅ Desktop drawer */}
         <Drawer
           variant="permanent"
+          open
           sx={{
             display: { xs: "none", md: "block" },
             "& .MuiDrawer-paper": {
@@ -62,35 +73,63 @@ const AppLayout = () => {
               p: 1.6,
             },
           }}
-          open
         >
           <Sidebar />
         </Drawer>
       </Box>
 
       {/* Main */}
-      <Box sx={{ flexGrow: 1, p: { xs: 1.2, md: 1.6 } }}>
+      <Box
+        sx={{
+          flexGrow: 1,
+
+          // ✅ DO NOT give too much padding on xs (it causes overflow)
+          p: { xs: 0.4, sm: 0.8, md: 1.6 },
+
+          width: "100%",
+          maxWidth: "100%",
+          overflowX: "clip",
+        }}
+      >
         <Box
           sx={{
             minHeight: "calc(100vh - 20px)",
-            borderRadius: 6,
+            borderRadius: { xs: 4, md: 6 },
             overflow: "hidden",
             bgcolor: "rgba(255,255,255,0.45)",
             border: "1px solid rgba(226,232,240,0.75)",
             boxShadow: "0 20px 55px rgba(2,6,23,0.10)",
+
+            width: "100%",
+            maxWidth: "100%",
           }}
         >
           <Topbar onMenuClick={toggleDrawer} />
 
-          {/* ✅ Center Wrapper Added Here */}
-          <Box sx={{ p: { xs: 2, md: 3 } }}>
+          {/* ✅ content wrapper */}
+          <Box
+            sx={{
+              // ✅ single wrapper padding
+              p: { xs: 1.2, sm: 1.6, md: 2.4 },
+              width: "100%",
+              maxWidth: "100%",
+              overflowX: "clip",
+            }}
+          >
             <Box
               component="main"
               sx={{
                 flexGrow: 1,
-                px: { xs: 1.2, md: 3 },
-                pt: { xs: 1.2, md: 2.4 },
-                pb: { xs: 4, md: 0 },
+
+                // ✅ important: avoid extra px on xs
+                px: { xs: 0.4, sm: 1, md: 2.4 },
+
+                pt: { xs: 0.6, md: 1.8 },
+                pb: { xs: 4, md: 1 },
+
+                width: "100%",
+                maxWidth: "100%",
+                overflowX: "clip",
               }}
             >
               <Outlet />

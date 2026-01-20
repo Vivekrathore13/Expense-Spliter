@@ -159,15 +159,28 @@ const GroupPage = () => {
   }
 
   return (
-    <Box sx={{ p: 2 }}>
+    <Box
+      sx={{
+        width: "100%",
+        maxWidth: "min(1120px, 100%)",
+        mx: "auto",
+
+        // ✅ Mobile overflow fix
+        overflowX: "clip",
+
+        // ✅ AppLayout already adds padding
+        p: { xs: 0, sm: 0.4, md: 0 },
+      }}
+    >
       {/* Header Card */}
       <Card
         sx={{
-          p: 2.5,
+          p: { xs: 1.8, md: 2.5 },
           borderRadius: 4,
           border: "1px solid rgba(0,0,0,0.06)",
           background:
             "linear-gradient(135deg, rgba(37,99,235,0.10), rgba(99,102,241,0.10))",
+          overflow: "hidden", // ✅ important
         }}
       >
         <Stack
@@ -175,8 +188,9 @@ const GroupPage = () => {
           spacing={2}
           justifyContent="space-between"
           alignItems={{ xs: "stretch", md: "flex-start" }}
+          sx={{ minWidth: 0 }}
         >
-          <Box>
+          <Box sx={{ minWidth: 0 }}>
             <Stack direction="row" spacing={1} alignItems="center">
               <Tooltip title="Back">
                 <IconButton
@@ -184,14 +198,15 @@ const GroupPage = () => {
                   sx={{
                     border: "1px solid rgba(0,0,0,0.08)",
                     borderRadius: 3,
+                    flexShrink: 0,
                   }}
                 >
                   <ArrowBackIosNewIcon fontSize="small" />
                 </IconButton>
               </Tooltip>
 
-              <Box>
-                <Typography variant="h5" fontWeight={900}>
+              <Box sx={{ minWidth: 0 }}>
+                <Typography variant="h5" fontWeight={900} noWrap>
                   {groupName}
                 </Typography>
                 <Typography sx={{ color: "text.secondary", mt: 0.5 }}>
@@ -200,17 +215,28 @@ const GroupPage = () => {
               </Box>
             </Stack>
 
+            {/* Chips */}
             <Stack
               direction="row"
               spacing={1}
               sx={{ mt: 1.6, flexWrap: "wrap" }}
             >
               <Chip label={`${members.length} Members`} />
+
               <Chip
                 color="primary"
                 variant="outlined"
                 label={`You: ${user?.fullName || user?.email || "User"}`}
+                sx={{
+                  maxWidth: "100%",
+                  "& .MuiChip-label": {
+                    maxWidth: "100%",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                  },
+                }}
               />
+
               {isAdmin && (
                 <Chip
                   color="success"
@@ -222,28 +248,41 @@ const GroupPage = () => {
             </Stack>
 
             {/* Danger actions */}
-            <Stack direction="row" spacing={1} sx={{ mt: 1.4, flexWrap: "wrap" }}>
-              {/* Leave for non-admin */}
+            <Stack
+              direction={{ xs: "column", sm: "row" }}
+              spacing={1}
+              sx={{
+                mt: 1.4,
+                flexWrap: "wrap",
+              }}
+            >
               {!isAdmin && (
                 <Button
                   color="error"
                   variant="outlined"
                   startIcon={<ExitToAppIcon />}
                   onClick={() => setLeaveOpen(true)}
-                  sx={{ borderRadius: 3, fontWeight: 900 }}
+                  sx={{
+                    borderRadius: 3,
+                    fontWeight: 900,
+                    width: { xs: "100%", sm: "auto" }, // ✅ mobile full width
+                  }}
                 >
                   Leave Group
                 </Button>
               )}
 
-              {/* Delete only for admin */}
               {isAdmin && (
                 <Button
                   color="error"
                   variant="contained"
                   startIcon={<DeleteOutlineIcon />}
                   onClick={() => setDeleteGroupOpen(true)}
-                  sx={{ borderRadius: 3, fontWeight: 900 }}
+                  sx={{
+                    borderRadius: 3,
+                    fontWeight: 900,
+                    width: { xs: "100%", sm: "auto" },
+                  }}
                 >
                   Delete Group
                 </Button>
@@ -255,7 +294,12 @@ const GroupPage = () => {
             <Button
               variant="contained"
               onClick={() => setOpenAdd(true)}
-              sx={{ borderRadius: 3.2, fontWeight: 900, py: 1.1 }}
+              sx={{
+                borderRadius: 3.2,
+                fontWeight: 900,
+                py: 1.1,
+                width: { xs: "100%", sm: "auto" }, // ✅ mobile full width
+              }}
             >
               + Add Expense
             </Button>
@@ -274,12 +318,12 @@ const GroupPage = () => {
       </Card>
 
       {/* Members */}
-      <Card sx={{ mt: 2, p: 2.2, borderRadius: 4 }}>
+      <Card sx={{ mt: 2, p: { xs: 1.8, md: 2.2 }, borderRadius: 4 }}>
         <Stack
-          direction="row"
+          direction={{ xs: "column", sm: "row" }}
           justifyContent="space-between"
-          alignItems="center"
-          sx={{ mb: 1 }}
+          alignItems={{ xs: "flex-start", sm: "center" }}
+          sx={{ mb: 1, gap: 1 }}
         >
           <Typography fontWeight={900}>Members</Typography>
 
@@ -306,10 +350,16 @@ const GroupPage = () => {
                   borderRadius: 3,
                   border: "1px solid rgba(0,0,0,0.06)",
                   background: isYou ? "rgba(37,99,235,0.06)" : "transparent",
+                  overflow: "hidden",
                 }}
               >
-                <Stack direction="row" alignItems="center" spacing={1.2}>
-                  <Avatar sx={{ fontWeight: 900 }}>
+                <Stack
+                  direction="row"
+                  alignItems="center"
+                  spacing={1.2}
+                  sx={{ minWidth: 0 }}
+                >
+                  <Avatar sx={{ fontWeight: 900, flexShrink: 0 }}>
                     {(m?.fullName || m?.email || "U")[0]?.toUpperCase()}
                   </Avatar>
 
@@ -317,7 +367,10 @@ const GroupPage = () => {
                     <Typography fontWeight={900} noWrap>
                       {m?.fullName || "Member"} {isYou ? "(You)" : ""}
                     </Typography>
-                    <Typography sx={{ color: "text.secondary", fontSize: 13 }} noWrap>
+                    <Typography
+                      sx={{ color: "text.secondary", fontSize: 13 }}
+                      noWrap
+                    >
                       {m?.email}
                     </Typography>
                   </Box>
@@ -327,7 +380,6 @@ const GroupPage = () => {
                       <Chip size="small" color="success" label="Admin" />
                     )}
 
-                    {/* ✅ Admin can remove others (not admin itself) */}
                     {isAdmin && !isYou && !isThisAdmin && (
                       <Tooltip title="Remove member">
                         <IconButton
@@ -338,7 +390,10 @@ const GroupPage = () => {
                           }}
                           size="small"
                         >
-                          <PersonRemoveAlt1Icon fontSize="small" color="error" />
+                          <PersonRemoveAlt1Icon
+                            fontSize="small"
+                            color="error"
+                          />
                         </IconButton>
                       </Tooltip>
                     )}
@@ -351,8 +406,13 @@ const GroupPage = () => {
       </Card>
 
       {/* Expenses */}
-      <Card sx={{ mt: 2, p: 2.2, borderRadius: 4 }}>
-        <Stack direction="row" justifyContent="space-between" alignItems="center">
+      <Card sx={{ mt: 2, p: { xs: 1.8, md: 2.2 }, borderRadius: 4 }}>
+        <Stack
+          direction={{ xs: "column", sm: "row" }}
+          justifyContent="space-between"
+          alignItems={{ xs: "flex-start", sm: "center" }}
+          sx={{ gap: 1 }}
+        >
           <Typography fontWeight={900}>Expenses</Typography>
           <Typography sx={{ fontSize: 13, color: "text.secondary" }}>
             Recent transactions of this group
@@ -388,7 +448,8 @@ const GroupPage = () => {
         <DialogTitle sx={{ fontWeight: 900 }}>Delete Group?</DialogTitle>
         <DialogContent>
           <Typography sx={{ color: "text.secondary" }}>
-            This will permanently delete <b>{groupName}</b>. All expenses will be lost.
+            This will permanently delete <b>{groupName}</b>. All expenses will
+            be lost.
           </Typography>
         </DialogContent>
         <DialogActions sx={{ p: 2 }}>
@@ -417,7 +478,8 @@ const GroupPage = () => {
         <DialogTitle sx={{ fontWeight: 900 }}>Leave Group?</DialogTitle>
         <DialogContent>
           <Typography sx={{ color: "text.secondary" }}>
-            You will be removed from <b>{groupName}</b>. You can join again only if invited.
+            You will be removed from <b>{groupName}</b>. You can join again only
+            if invited.
           </Typography>
         </DialogContent>
         <DialogActions sx={{ p: 2 }}>
@@ -446,7 +508,8 @@ const GroupPage = () => {
         <DialogTitle sx={{ fontWeight: 900 }}>Remove Member?</DialogTitle>
         <DialogContent>
           <Typography sx={{ color: "text.secondary" }}>
-            Remove <b>{removeTarget?.fullName || removeTarget?.email}</b> from this group?
+            Remove <b>{removeTarget?.fullName || removeTarget?.email}</b> from
+            this group?
           </Typography>
         </DialogContent>
         <DialogActions sx={{ p: 2 }}>

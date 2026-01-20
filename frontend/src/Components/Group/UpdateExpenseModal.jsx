@@ -15,7 +15,10 @@ import {
   Divider,
   Box,
   Alert,
+  useMediaQuery,
 } from "@mui/material";
+import { useTheme } from "@mui/material/styles";
+
 import axiosInstance from "../../services/axiosinstance";
 import { toast } from "react-toastify";
 import SplitEditor from "./SplitEditor";
@@ -28,6 +31,9 @@ const UpdateExpenseModal = ({
   expense,
   onSuccess,
 }) => {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
+
   const user = useMemo(
     () => JSON.parse(localStorage.getItem("user") || "null"),
     []
@@ -111,7 +117,18 @@ const UpdateExpenseModal = ({
   };
 
   return (
-    <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm">
+    <Dialog
+      open={open}
+      onClose={onClose}
+      fullWidth
+      maxWidth="sm"
+      PaperProps={{
+        sx: {
+          borderRadius: 4,
+          overflow: "hidden",
+        },
+      }}
+    >
       <DialogTitle sx={{ fontWeight: 900 }}>
         Edit Expense ✏️
         <Typography sx={{ fontSize: 13, color: "text.secondary", mt: 0.5 }}>
@@ -119,7 +136,11 @@ const UpdateExpenseModal = ({
         </Typography>
       </DialogTitle>
 
-      <DialogContent>
+      <DialogContent
+        sx={{
+          overflowX: "hidden", // ✅ MOBILE overflow fix
+        }}
+      >
         <Stack spacing={2} sx={{ mt: 1 }}>
           <TextField
             label="Description"
@@ -128,13 +149,15 @@ const UpdateExpenseModal = ({
             fullWidth
           />
 
-          <Stack direction="row" spacing={2}>
+          {/* ✅ MOBILE FIX: amount + paidBy become column on mobile */}
+          <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
             <TextField
               label="Amount"
               type="number"
               value={form.amount}
               onChange={(e) => setForm({ ...form, amount: e.target.value })}
               fullWidth
+              inputProps={{ min: 0 }}
             />
 
             <TextField
@@ -143,37 +166,61 @@ const UpdateExpenseModal = ({
               value={form.paidBy}
               onChange={(e) => setForm({ ...form, paidBy: e.target.value })}
               fullWidth
+              SelectProps={{
+                MenuProps: {
+                  PaperProps: {
+                    sx: { maxHeight: 300 },
+                  },
+                },
+              }}
             >
-              {members.map((m) => (
-                <MenuItem key={m._id || m.userId} value={m._id || m.userId}>
-                  {m.fullName || m.email}
-                </MenuItem>
-              ))}
+              {members.map((m) => {
+                const id = m._id || m.userId;
+                const label = m.fullName || m.email || "Member";
+                return (
+                  <MenuItem key={id} value={id} sx={{ maxWidth: "100%" }}>
+                    <Typography
+                      sx={{
+                        fontWeight: 800,
+                        maxWidth: "100%",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      {label}
+                    </Typography>
+                  </MenuItem>
+                );
+              })}
             </TextField>
           </Stack>
 
           <Divider />
 
-          <Box>
+          <Box sx={{ minWidth: 0 }}>
             <Typography fontWeight={900} sx={{ mb: 1 }}>
               Split Type
             </Typography>
 
+            {/* ✅ MOBILE FIX: toggle buttons spacing + wrap safe */}
             <ToggleButtonGroup
               value={splitType}
               exclusive
               onChange={(e, val) => val && setSplitType(val)}
               fullWidth
+              sx={{
+                "& .MuiToggleButton-root": {
+                  fontWeight: 900,
+                  textTransform: "none",
+                  px: isMobile ? 1 : 2,
+                  py: isMobile ? 1 : 1.1,
+                },
+              }}
             >
-              <ToggleButton value="equal" sx={{ fontWeight: 800 }}>
-                Equal
-              </ToggleButton>
-              <ToggleButton value="exact" sx={{ fontWeight: 800 }}>
-                Exact
-              </ToggleButton>
-              <ToggleButton value="percentage" sx={{ fontWeight: 800 }}>
-                %
-              </ToggleButton>
+              <ToggleButton value="equal">Equal</ToggleButton>
+              <ToggleButton value="exact">Exact</ToggleButton>
+              <ToggleButton value="percentage">%</ToggleButton>
             </ToggleButtonGroup>
           </Box>
 
@@ -194,13 +241,22 @@ const UpdateExpenseModal = ({
           />
 
           {!splitState.isValid && (
-            <Alert severity="warning">{splitState.error}</Alert>
+            <Alert severity="warning" sx={{ borderRadius: 3 }}>
+              {splitState.error}
+            </Alert>
           )}
         </Stack>
       </DialogContent>
 
-      <DialogActions sx={{ p: 2 }}>
-        <Button onClick={onClose} sx={{ borderRadius: 3 }}>
+      <DialogActions
+        sx={{
+          p: 2,
+          gap: 1,
+          flexDirection: { xs: "column", sm: "row" }, // ✅ MOBILE nice
+          alignItems: { xs: "stretch", sm: "center" },
+        }}
+      >
+        <Button onClick={onClose} sx={{ borderRadius: 3, fontWeight: 900 }}>
           Cancel
         </Button>
 

@@ -65,8 +65,12 @@ const ExpenseList = ({ expenses = [], groupId, members = [], onDeleted }) => {
 
   // ✅ calculate YOU OWE / YOU GET chip
   const getUserChip = (expense) => {
-    const payerId =
-      String(expense?.paidBy?._id || expense?.paidBy?.id || expense?.paidBy || "");
+    const payerId = String(
+      expense?.paidBy?._id ||
+        expense?.paidBy?.id ||
+        expense?.paidBy ||
+        ""
+    );
 
     const mySplit = (expense?.splitDetails || []).find(
       (s) => String(s?.user?._id || s?.user) === myId
@@ -79,7 +83,8 @@ const ExpenseList = ({ expenses = [], groupId, members = [], onDeleted }) => {
       const total = Number(expense?.amount || 0);
       const iGet = +(total - myAmount).toFixed(2);
 
-      if (iGet <= 0) return { label: "You paid", color: "success", variant: "outlined" };
+      if (iGet <= 0)
+        return { label: "You paid", color: "success", variant: "outlined" };
 
       return {
         label: `You get ₹${iGet}`,
@@ -137,8 +142,9 @@ const ExpenseList = ({ expenses = [], groupId, members = [], onDeleted }) => {
     <>
       <Stack spacing={1.5}>
         {expenses.map((e) => {
-          const payerId =
-            String(e?.paidBy?._id || e?.paidBy?.id || e?.paidBy || "");
+          const payerId = String(
+            e?.paidBy?._id || e?.paidBy?.id || e?.paidBy || ""
+          );
           const isMine = payerId === myId;
 
           const statusChip = getUserChip(e);
@@ -148,10 +154,12 @@ const ExpenseList = ({ expenses = [], groupId, members = [], onDeleted }) => {
             <Card
               key={e._id}
               sx={{
-                p: 2,
+                p: { xs: 1.6, md: 2 },
                 borderRadius: 4,
                 border: "1px solid rgba(0,0,0,0.06)",
                 transition: "all 0.25s ease",
+                overflow: "hidden", // ✅ important
+                minWidth: 0,
                 "&:hover": {
                   transform: "translateY(-2px)",
                   boxShadow: "0 10px 25px rgba(0,0,0,0.08)",
@@ -159,15 +167,25 @@ const ExpenseList = ({ expenses = [], groupId, members = [], onDeleted }) => {
                 },
               }}
             >
-              {/* header */}
+              {/* ✅ header */}
               <Stack
-                direction="row"
+                direction={{ xs: "column", sm: "row" }}
                 justifyContent="space-between"
-                alignItems="flex-start"
-                spacing={2}
+                alignItems={{ xs: "stretch", sm: "flex-start" }}
+                spacing={{ xs: 1.2, sm: 2 }}
+                sx={{ minWidth: 0 }}
               >
+                {/* left side */}
                 <Box sx={{ minWidth: 0 }}>
-                  <Typography fontWeight={900} sx={{ fontSize: 16 }}>
+                  <Typography
+                    fontWeight={900}
+                    sx={{
+                      fontSize: 16,
+                      whiteSpace: "nowrap",
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                    }}
+                  >
                     {e.description || "Expense"}
                   </Typography>
 
@@ -177,15 +195,26 @@ const ExpenseList = ({ expenses = [], groupId, members = [], onDeleted }) => {
                       fontSize: 13,
                       mt: 0.5,
                       wordBreak: "break-word",
+                      pr: { xs: 0, sm: 1 },
                     }}
                   >
                     Paid by <b>{e?.paidBy?.fullName || "User"}</b> •{" "}
                     {new Date(e.createdAt).toLocaleString()}
                   </Typography>
 
-                  <Stack direction="row" spacing={1} sx={{ mt: 1, flexWrap: "wrap" }}>
+                  <Stack
+                    direction="row"
+                    spacing={1}
+                    sx={{
+                      mt: 1,
+                      flexWrap: "wrap",
+                      rowGap: 0.8,
+                    }}
+                  >
                     <Chip size="small" label={`Split: ${e.splitType}`} />
-                    {isMine && <Chip size="small" color="success" label="You paid" />}
+                    {isMine && (
+                      <Chip size="small" color="success" label="You paid" />
+                    )}
                     {statusChip && (
                       <Chip
                         size="small"
@@ -198,20 +227,38 @@ const ExpenseList = ({ expenses = [], groupId, members = [], onDeleted }) => {
                   </Stack>
                 </Box>
 
-                <Stack direction="row" spacing={1} alignItems="center">
+                {/* ✅ right side actions */}
+                <Stack
+                  direction="row"
+                  spacing={1}
+                  alignItems="center"
+                  justifyContent={{ xs: "flex-end", sm: "flex-start" }}
+                  sx={{
+                    flexShrink: 0,
+                    width: { xs: "100%", sm: "auto" },
+                    pt: { xs: 0.2, sm: 0 },
+                  }}
+                >
                   <Chip
                     label={`₹${e.amount}`}
                     color="primary"
                     variant="outlined"
-                    sx={{ fontWeight: 900 }}
+                    sx={{
+                      fontWeight: 900,
+                      maxWidth: { xs: "120px", sm: "none" },
+                    }}
                   />
 
                   {/* Expand/Collapse */}
                   <Tooltip title={isExpanded ? "Hide split" : "Show split"}>
                     <IconButton
                       onClick={() => toggleExpand(e._id)}
-                      sx={{ ml: 0.5 }}
                       size="small"
+                      sx={{
+                        ml: 0.5,
+                        border: "1px solid rgba(0,0,0,0.07)",
+                        borderRadius: 2,
+                      }}
                     >
                       {isExpanded ? <ExpandLessIcon /> : <ExpandMoreIcon />}
                     </IconButton>
@@ -249,14 +296,14 @@ const ExpenseList = ({ expenses = [], groupId, members = [], onDeleted }) => {
 
               <Divider sx={{ my: 1.4 }} />
 
-              {/* Split details collapsible */}
+              {/* ✅ Split details collapsible */}
               <Collapse in={isExpanded} timeout="auto" unmountOnExit>
-                <Box sx={{ mt: 0.5 }}>
+                <Box sx={{ mt: 0.5, minWidth: 0 }}>
                   <Typography fontWeight={900} sx={{ fontSize: 13, mb: 0.8 }}>
                     Split Details
                   </Typography>
 
-                  <Stack spacing={0.7}>
+                  <Stack spacing={0.7} sx={{ minWidth: 0 }}>
                     {(e.splitDetails || []).map((s) => {
                       const uid = String(s?.user?._id || s?.user || "");
                       const isYou = uid === myId;
@@ -268,22 +315,41 @@ const ExpenseList = ({ expenses = [], groupId, members = [], onDeleted }) => {
                             display: "flex",
                             justifyContent: "space-between",
                             alignItems: "center",
-                            gap: 2,
+                            gap: 1.2,
                             fontSize: 13,
                             borderRadius: 2,
                             px: 1,
                             py: 0.8,
-                            bgcolor: isYou ? "rgba(37,99,235,0.08)" : "transparent",
+                            minWidth: 0,
+                            bgcolor: isYou
+                              ? "rgba(37,99,235,0.08)"
+                              : "transparent",
                           }}
                         >
-                          <span style={{ color: "#475569", fontWeight: 700 }}>
+                          <Typography
+                            sx={{
+                              color: "#475569",
+                              fontWeight: 800,
+                              fontSize: 13,
+                              minWidth: 0,
+                              overflow: "hidden",
+                              textOverflow: "ellipsis",
+                              whiteSpace: "nowrap",
+                            }}
+                          >
                             {s?.user?.fullName || s?.user?.email || "Member"}
                             {isYou ? " (You)" : ""}
-                          </span>
+                          </Typography>
 
-                          <span style={{ fontWeight: 900, color: "#111" }}>
+                          <Typography
+                            sx={{
+                              fontWeight: 900,
+                              color: "#111",
+                              flexShrink: 0,
+                            }}
+                          >
                             ₹{Number(s.amount || 0).toFixed(2)}
-                          </span>
+                          </Typography>
                         </Box>
                       );
                     })}
