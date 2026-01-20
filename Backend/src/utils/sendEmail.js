@@ -1,17 +1,16 @@
 import nodemailer from "nodemailer";
 
 export const sendEmail = async ({ to, subject, html }) => {
+  const host = process.env.SMTP_HOST || "smtp-relay.brevo.com";
+  const port = Number(process.env.SMTP_PORT || 587);
+  const user = process.env.SMTP_USER;
+  const pass = process.env.SMTP_PASS;
+
+  // ✅ Verified sender
+  const fromEmail = process.env.SMTP_FROM || user;
+  const fromName = process.env.SMTP_FROM_NAME || "Expense Splitter";
+
   try {
-    const host = process.env.SMTP_HOST || "smtp-relay.brevo.com";
-    const port = Number(process.env.SMTP_PORT || 587);
-    const user = process.env.SMTP_USER;
-    const pass = process.env.SMTP_PASS;
-
-    // ✅ IMPORTANT: Use a verified sender email in Brevo
-    // Add this in Render ENV: SMTP_FROM=your_verified_sender@yourdomain.com
-    const fromEmail = process.env.SMTP_FROM || user;
-    const fromName = process.env.SMTP_FROM_NAME || "Expense Splitter";
-
     if (!user || !pass) {
       console.log("❌ SMTP env missing:", {
         SMTP_HOST: host,
@@ -23,9 +22,9 @@ export const sendEmail = async ({ to, subject, html }) => {
       throw new Error("SMTP credentials missing in environment variables");
     }
 
-    // ✅ Correct secure flag:
-    // - port 465: secure true (SSL)
-    // - port 587: secure false (STARTTLS)
+    // ✅ secure:
+    // 465 -> secure true
+    // 587 -> secure false + STARTTLS
     const secure = port === 465;
 
     const transporter = nodemailer.createTransport({
@@ -34,22 +33,28 @@ export const sendEmail = async ({ to, subject, html }) => {
       secure,
       auth: { user, pass },
 
-      // ✅ Render / Cloud stable config
-      requireTLS: port === 587, // force STARTTLS on 587
+      // ✅ MUST for 587 (STARTTLS)
+      requireTLS: port === 587,
+      ignoreTLS: false,
 
-      connectionTimeout: 30000, // 30s
-      greetingTimeout: 30000,
-      socketTimeout: 45000,
+      // ✅ Render stable timeouts
+      connectionTimeout: 60000, // 60 sec
+      greetingTimeout: 60000,
+      socketTimeout: 60000,
 
+      // ✅ safer TLS
       tls: {
-        // ✅ important for some clouds
         servername: host,
+        minVersion: "TLSv1.2",
       },
     });
 
-    // ✅ verify transport
+    // ✅ Debug verify
+    console.log("📨 SMTP Verify start...", { host, port, secure });
     await transporter.verify();
+    console.log("✅ SMTP Verified OK");
 
+    // ✅ Send mail
     const info = await transporter.sendMail({
       from: `"${fromName}" <${fromEmail}>`,
       to,
@@ -57,10 +62,21 @@ export const sendEmail = async ({ to, subject, html }) => {
       html,
     });
 
-    console.log("✅ Email sent:", info.messageId);
+    console.log("✅ Email sent:", {
+      messageId: info.messageId,
+      to,
+    });
+
     return info;
   } catch (err) {
-    console.log("❌ Nodemailer Full Error:", err);
+    console.log("❌ Nodemailer Full Error:", {
+      message: err?.message,
+      code: err?.code,
+      command: err?.command,
+      response: err?.response,
+      stack: err?.stack,
+    });
+
     throw new Error(err?.message || "Failed to send email");
   }
 };
