@@ -36,6 +36,9 @@ export const sendEmail = async ({ to, subject, html }) => {
       },
       timeout: 20000,
     });
+    console.log("🔑 BREVO key exists?", !!process.env.BREVO_API_KEY);
+console.log("🔑 BREVO key prefix:", (process.env.BREVO_API_KEY || "").slice(0, 10));
+
 
     console.log("✅ Brevo API Email sent successfully:", res.data);
     return res.data;
