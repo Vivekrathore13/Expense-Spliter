@@ -2,17 +2,20 @@ import axios from "axios";
 
 export const sendEmail = async ({ to, subject, html }) => {
   try {
-    const apiKey = process.env.BREVO_API_KEY;
-    const fromEmail = process.env.SMTP_FROM;
-    const fromName = process.env.SMTP_FROM_NAME || "Expense Splitter";
+    const apiKey = (process.env.BREVO_API_KEY || "").trim();
+    const fromEmail = (process.env.SMTP_FROM || "").trim();
+    const fromName = (process.env.SMTP_FROM_NAME || "Expense Splitter").trim();
+
+    // ✅ DEBUG BEFORE REQUEST
+    console.log("🔑 BREVO key exists?", !!apiKey);
+    console.log("🔑 BREVO key prefix:", apiKey.slice(0, 10));
+    console.log("📩 FROM:", { fromEmail, fromName });
 
     if (!apiKey) {
-      console.log("❌ BREVO_API_KEY missing in env");
       throw new Error("BREVO_API_KEY missing in environment variables");
     }
 
     if (!fromEmail) {
-      console.log("❌ SMTP_FROM missing in env");
       throw new Error("SMTP_FROM missing in environment variables");
     }
 
@@ -30,15 +33,12 @@ export const sendEmail = async ({ to, subject, html }) => {
 
     const res = await axios.post("https://api.brevo.com/v3/smtp/email", payload, {
       headers: {
-        accept: "application/json",
-        "api-key": apiKey,
-        "content-type": "application/json",
+        Accept: "application/json",
+        "api-key": apiKey, // ✅ correct
+        "Content-Type": "application/json",
       },
       timeout: 20000,
     });
-    console.log("🔑 BREVO key exists?", !!process.env.BREVO_API_KEY);
-console.log("🔑 BREVO key prefix:", (process.env.BREVO_API_KEY || "").slice(0, 10));
-
 
     console.log("✅ Brevo API Email sent successfully:", res.data);
     return res.data;
