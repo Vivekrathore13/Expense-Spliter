@@ -14,22 +14,14 @@ import GroupsPage from "../Components/Group/GroupsPage";
 import GroupPage from "../Components/Group/GroupPage";
 
 import SettleUpPage from "../Components/Settle/SettleUpPage";
-
-// ✅ NEW IMPORT
 import SettleHome from "../Components/Settle/SettleHome";
 
 import ComingSoon from "../Components/ComingSoon/ComingSoon";
-
 import PrivateRoute from "./PrivateRoute";
 
 // ✅ Notifications
 import NotificationsPage from "../Components/Notifications/NotificationsPage";
-
 import SettingsPage from "../Components/Settings/SettingsPage";
-
-const Page = ({ title }) => (
-  <div style={{ fontWeight: 900, fontSize: 22 }}>{title}</div>
-);
 
 const AppRoutes = () => {
   return (
@@ -38,6 +30,9 @@ const AppRoutes = () => {
       <Route path="/" element={<LandingP />} />
       <Route path="/signup" element={<Signup />} />
       <Route path="/login" element={<Login />} />
+
+      {/* ✅ INVITE ROUTE MUST BE PUBLIC ✅ */}
+      <Route path="/join-group" element={<JoinGroup />} />
 
       {/* ✅ Protected Layout */}
       <Route
@@ -48,13 +43,10 @@ const AppRoutes = () => {
           </PrivateRoute>
         }
       >
-        {/* ✅ Child routes = WITHOUT "/" */}
+        {/* ✅ Child routes WITHOUT "/" */}
         <Route path="dashboard" element={<Dashboard />} />
         <Route path="groups" element={<GroupsPage />} />
         <Route path="group/:groupId" element={<GroupPage />} />
-
-        {/* ✅ JoinGroup should be public (invite link) but if you want it protected then okay */}
-        <Route path="join-group" element={<JoinGroup />} />
 
         {/* Optional pages */}
         <Route
@@ -66,7 +58,6 @@ const AppRoutes = () => {
             />
           }
         />
-
         <Route
           path="expenses/add"
           element={
@@ -81,7 +72,8 @@ const AppRoutes = () => {
         <Route path="settle" element={<SettleHome />} />
         <Route path="settle-up/:groupId" element={<SettleUpPage />} />
 
-        <Route path="/settings" element={<SettingsPage />} />
+        {/* ✅ Settings */}
+        <Route path="settings" element={<SettingsPage />} />
 
         {/* ✅ Notifications */}
         <Route path="notifications" element={<NotificationsPage />} />
