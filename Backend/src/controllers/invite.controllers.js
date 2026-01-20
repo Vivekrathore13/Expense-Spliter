@@ -28,6 +28,55 @@ const generateAccessAndRefereshTokens = async (userId) => {
   }
 };
 
+// ✅ helper to make safe frontend base url
+const getFrontendUrl = () => {
+  const raw = process.env.FRONTEND_URL || "";
+  return raw.trim().replace(/\/+$/, ""); // remove trailing slashes
+};
+
+// ✅ helper to build invite link safely
+const buildInviteLink = (token) => {
+  const FRONTEND = getFrontendUrl();
+  const safeToken = encodeURIComponent(token);
+  return `${FRONTEND}/join-group?token=${safeToken}`;
+};
+
+// ✅ Email HTML template
+const inviteEmailTemplate = ({ inviterName, groupName, inviteLink, isResend }) => {
+  return `
+    <div style="font-family: Arial, sans-serif; padding: 16px; line-height: 1.55;">
+      <h2 style="margin: 0 0 10px;">You are invited to join a group 🎉</h2>
+      <p style="margin: 0 0 10px;">
+        <b>${inviterName}</b> invited you to join the group <b>${groupName}</b>.
+      </p>
+
+      <p style="margin: 0 0 14px;">Click the button below to join:</p>
+
+      <a href="${inviteLink}" target="_blank" rel="noreferrer"
+         style="display:inline-block;background:#2563eb;color:white;
+                padding:12px 18px;border-radius:10px;text-decoration:none;font-weight:bold;">
+        Join Group
+      </a>
+
+      <p style="margin-top: 14px; color:#64748b; font-size:13px;">
+        If the button doesn't work, copy and paste this link in your browser:
+      </p>
+
+      <p style="word-break: break-all; font-size: 13px; color:#0f172a; background:#f1f5f9; padding:10px; border-radius:10px;">
+        ${inviteLink}
+      </p>
+
+      <p style="margin-top: 14px; color:#64748b; font-size:13px;">
+        ${
+          isResend
+            ? "This invitation is already active. You can use the same link."
+            : "This invitation will expire in 2 days."
+        }
+      </p>
+    </div>
+  `;
+};
+
 // ✅ 1) SEND INVITE (Admin only)
 export const sendInvite = asyncHandler(async (req, res) => {
   const { email } = req.body;
@@ -66,23 +115,14 @@ export const sendInvite = asyncHandler(async (req, res) => {
 
   // ✅ If invite already exists -> RESEND SAME LINK
   if (existing) {
-    const inviteLink = `${process.env.FRONTEND_URL}/join-group?token=${existing.token}`;
+    const inviteLink = buildInviteLink(existing.token);
 
-    const html = `
-      <div style="font-family: Arial, sans-serif; padding: 16px;">
-        <h2>You are invited to join a group 🎉</h2>
-        <p><b>${req.user.fullName}</b> invited you to join the group <b>${group.groupname}</b>.</p>
-        <p>Click below to join:</p>
-        <a href="${inviteLink}"
-           style="display:inline-block;background:#2563eb;color:white;
-                  padding:12px 18px;border-radius:10px;text-decoration:none;font-weight:bold;">
-           Join Group
-        </a>
-        <p style="margin-top:16px;color:#64748b;font-size:13px;">
-          This invitation is already active. You can use the same link.
-        </p>
-      </div>
-    `;
+    const html = inviteEmailTemplate({
+      inviterName: req.user.fullName,
+      groupName: group.groupname,
+      inviteLink,
+      isResend: true,
+    });
 
     // ✅ IMPORTANT: Email fail ho to route crash na ho
     let emailSent = true;
@@ -144,23 +184,14 @@ export const sendInvite = asyncHandler(async (req, res) => {
   invite.token = token;
   await invite.save();
 
-  const inviteLink = `${process.env.FRONTEND_URL}/join-group?token=${token}`;
+  const inviteLink = buildInviteLink(token);
 
-  const html = `
-    <div style="font-family: Arial, sans-serif; padding: 16px;">
-      <h2>You are invited to join a group 🎉</h2>
-      <p><b>${req.user.fullName}</b> invited you to join the group <b>${group.groupname}</b>.</p>
-      <p>Click below to join:</p>
-      <a href="${inviteLink}"
-         style="display:inline-block;background:#2563eb;color:white;
-                padding:12px 18px;border-radius:10px;text-decoration:none;font-weight:bold;">
-         Join Group
-      </a>
-      <p style="margin-top:16px;color:#64748b;font-size:13px;">
-        This invitation will expire in 2 days.
-      </p>
-    </div>
-  `;
+  const html = inviteEmailTemplate({
+    inviterName: req.user.fullName,
+    groupName: group.groupname,
+    inviteLink,
+    isResend: false,
+  });
 
   // ✅ IMPORTANT: Email fail ho to route crash na ho
   let emailSent = true;
@@ -440,7 +471,9 @@ export const getSentInvites = asyncHandler(async (req, res) => {
 
   return res
     .status(200)
-    .json(new ApiResponse(200, formatted, "Sent invites fetched successfully ✅"));
+    .json(
+      new ApiResponse(200, formatted, "Sent invites fetched successfully ✅")
+    );
 });
 
 // ✅ 6) FIX OLD INVITES (Admin only)
